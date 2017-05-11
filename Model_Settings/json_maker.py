@@ -25,6 +25,19 @@ def _set_folders(folderPath):
 ####################################################################################
 ####################################################################################
 
+
+# Input Parameters
+imageDepthHeight_desc = "Depth Image Height"
+imageDepthWidth_desc = "Depth Image Width"
+imageDepthChannels_desc = "Depth Image channels"
+imageDepthHeight = 128
+imageDepthWidth = 512
+imageDepthChannels = 2
+####################################################################################
+####################################################################################
+####################################################################################
+####################################################################################
+
 # Twin Common Parameters
 trainLogDirBase = '../Data/128_logs/tfdh_twin_py_logs/train_logs/'
 testLogDirBase = '../Data/128_logs/tfdh_twin_py_logs/test_logs/'
@@ -33,7 +46,6 @@ warpedImageTestBase = '../Data/128_test_tfrecords_iterative/'
 
 # Shared Descriptions
 modelName_desc = "Name of the model file to be loaded from Model_Factory"
-
 usefp16_desc = "Use 16 bit floating point precision"
 pretrainedModelCheckpointPath_desc = "If specified, restore this pretrained model before beginning any training"
 trainDataDir_desc = "Directory to read training samples"
@@ -46,9 +58,7 @@ warpedTrainDataDir_desc = "Directory where to write wrapped train images"
 warpedTestDataDir_desc = "Directory where to write wrapped test images"
 writeWarpedImages_desc = "Flag showing if warped images should be written"
 
-imageHeight_desc = "Image Patch Height"
-imageWidth_desc = "Image Patch Width"
-imageChannels_desc = "Image Patch channels"
+
 imageTrnOrigHeight_desc = "train original image height"
 imageTrnOrigWidth_desc = "train original image width"
 imageTrnOrigChannels_desc = "train original image channels"
@@ -95,15 +105,8 @@ warpedTrainDataDir = warpedImageTrainBase+' '
 warpedTestDataDir = warpedImageTestBase+' '
 writeWarpedImages = False
 
-imageHeight = 128
-imageWidth = 128
-imageChannels = 2
-imageTrnOrigHeight = 240
-imageTrnOrigWidth = 320
-imageTrnOrigChannels = 1
-imageTstOrigHeight = 480
-imageTstOrigWidth = 640
-imageTstOrigChannels = 1
+
+
 outputSize = 8
 modelShape = [64, 64, 64, 64, 128, 128, 128, 128, 1024]
 numParallelModules = 2

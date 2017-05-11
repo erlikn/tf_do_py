@@ -17,8 +17,8 @@ import Data_IO.tfrecord_io as tfrecord_io
 
 
 # 32 batches (64 smaples per batch) = 2048 samples in a shard
-TRAIN_SHARD_SIZE = 32*64 
-TEST_SHARD_SIZE = 32*64 
+TRAIN_SHARD_SIZE = 32*64
+TEST_SHARD_SIZE = 32*64
 #190 shard files with (2048 samples per shard)
 NUMBER_OF_SHARDS = (388864//TRAIN_SHARD_SIZE)+1 
 

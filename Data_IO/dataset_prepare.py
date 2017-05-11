@@ -46,9 +46,12 @@ def perturb_writer( ID,
     tmatTarget: numpy matrix of size 4x4
     tfRecFolder: folder name
     '''
-    filename = str(ID) + "_" + str(idx)
-    fileID = [ID, idx]
-    tfrecord_io.tfrecord_writer(imgOrig, imgPatchOrig, imgPatchPert, pOrig, HAB, tfRecFolder, filename, fileID)
+    filename = str(ID[0]) + "_" + str(ID[1])
+    tfrecord_io.tfrecord_writer(fileID,
+                                pclA, pclB,
+                                imgDepthA, imgDepthB,
+                                tMatTarget,
+                                tfRecFolder, filename)
     return
 
 ################################
@@ -72,7 +75,8 @@ def _get_tMat_A_2_B(tMatA2o, tMatB2o):
     # tMatA2o: A -> Orig
     # tMatB2o: B -> Orig ==> inv(tMatB2o): Orig -> B
     # inv(tMatB2o) * tMatA2o : A -> B
-    return np.matmul(np.matmul(np.linalg.inv(tMatB2o), tMatA2o)
+    return np.matmul(np.matmul(np.linalg.inv(tMatB2o), tMatA2o))
+
 ################################
 def _get_correct_tmat(poseRow):
     return (np.array(np.append(poseRow, [0, 0, 0, 1]), dtype=np.float32)).reshape([4,4])
@@ -151,12 +155,12 @@ def _get_pose_path(poseFolder, seqID):
 def _get_file_names(readFolder):
     return [f for f in listdir(readFolder) if isfile(join(readFolder, f))]
 ################################
-def prepare_dataset(datasetType, readPath, seqIDs, tfRecFolder):
+def prepare_dataset(datasetType, pclPath, posePath, seqIDs, tfRecFolder):
     durationSum = 0
     for i in range(len(seqIDs)):
         print('Procseeing ', seqIDs[i])
-        poseFile = _get_pose_data(_get_pose_path(readPath, seqIDs[i]))
-        pclFilenames = _get_file_names(_get_pcl_folder(readPath, seqIDs[i]))
+        poseFile = _get_pose_data(_get_pose_path(posePath, seqIDs[i]))
+        pclFilenames = _get_file_names(_get_pcl_folder(pclPath, seqIDs[i]))
         pclFilenames.sort()
         startTime = time.time()
         num_cores = multiprocessing.cpu_count()
@@ -164,13 +168,13 @@ def prepare_dataset(datasetType, readPath, seqIDs, tfRecFolder):
     print('Done')
 
 ############# PATHS
-dataPath = '../Data/kitti/pointcloud/'
-posePath = '../Data/kitti/visual/poses/'
+pclPath = '../Data/kitti/pointcloud/'
+posePath = '../Data/kitti/poses/'
 seqIDtrain = ['00', '01', '02', '03', '04', '05', '06', '07', '08']
 seqIDtest = ['09', '10']
 
-traintfRecordFLD = "../../Data/train_tfrecords/"
-testtfRecordFLD = "../../Data/test_tfrecords/"
+traintfRecordFLD = "../Data/train_tfrecords/"
+testtfRecordFLD = "../Data/test_tfrecords/"
 
-prepare_dataset("test", dataPath, posePath, seqIDtest, testtfRecordFLD)
-prepare_dataset("train", dataPath, posePath, seqIDtrain, traintfRecordFLD)
+prepare_dataset("test", pclPath, posePath, seqIDtest, testtfRecordFLD)
+prepare_dataset("train", pclPath, posePath, seqIDtrain, traintfRecordFLD)

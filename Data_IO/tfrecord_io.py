@@ -50,106 +50,86 @@ def _decode_byte_image(image, height, width, depth):
         image.set_shape([height, width])
     return image
 
+def _get_pcl(pcl):
+    """
+    Decode and put point cloud in the right form. nx4
+    """
+    pcl = tf.reshape(features['pclA'], [-1, 4])
+    #pcl.set_shape([-1, 4])
+    return pcl
+
 def parse_example_proto(exampleSerialized, **kwargs):
-    """Parses an Example proto containing a training example of an image.
-    The output of the preprocessing script is a dataset
-    containing serialized Example protocol buffers. Each Example proto contains
-    the following fields:
-        height: 128
-        width: 128
-        channels: 2  -> 2 images stacked
-        HAB: [8]
-        pOrig: [8]
-        image/encoded: <bytes encoded string>
+    """
+        ID: python list with size 2
+        pclA: numpy matrix of size mx4
+        pclB: numpy matrix of size nx4
+        image: numpy matrix of 128x512x2
+            imgDepthA: numpy matrix of size 128x512
+            imgDepthB: numpy matrix of size 128x512
+        tMatTarget: numpy matrix of size 4x4
 
-        'height': _int64_feature(rows),
-        'width': _int64_feature(cols),
-        'depth': _int64_feature(depth),
-        'pOrig': _float_nparray(pOrigList),
-        'HAB': _float_nparray(HABList), # 2D np array
+        'ID': _int64_feature(IDList),
+        'pclA': _float_nparray(pclAList),
+        'pclB': _float_nparray(pclBList),
         'image': _bytes_feature(flatImageList)
-
-    Args:
-        exampleSerialized: scalar Tensor tf.string containing a serialized
-        Example protocol buffer.
-    Returns:
-      imageBuffer: Tensor tf.string containing the contents of a JPEG file.
-      HAB: Tensor tf.int32 containing the homography.
-      pOrig: Tensor tf.int32 contating the origianl square points
+        'tMatTarget': _float_nparray(tMatist), # 2D np array
     """
 
     featureMap = {
         'fileID': tf.FixedLenFeature([2], dtype=tf.int64),
-        'HAB': tf.FixedLenFeature([8], dtype=tf.float32),
-        'pOrig': tf.FixedLenFeature([8], dtype=tf.float32),
-        'image': tf.FixedLenFeature([], dtype=tf.string, default_value=''),
-        'imageOrig': tf.FixedLenFeature([], dtype=tf.string, default_value='')
+        'images': tf.FixedLenFeature([], dtype=tf.string, default_value=''),
+        'pclA': tf.FixedLenFeature([], dtype=tf.float32, default_value=''),
+        'pclB': tf.FixedLenFeature([], dtype=tf.float32, default_value=''),
+        'tMatTarget': tf.FixedLenFeature([8], dtype=tf.float32)
         }
     features = tf.parse_single_example(exampleSerialized, featureMap)
 
-    image = _decode_byte_image(features['image'],
-                               kwargs.get('imageHeight'),
-                               kwargs.get('imageWidth'),
-                               kwargs.get('imageChannels'))
-    if kwargs.get('phase') == 'train':
-        imageOrig = _decode_byte_image(features['imageOrig'],
-                                       kwargs.get('imageTrnOrigHeight'),
-                                       kwargs.get('imageTrnOrigWidth'),
-                                       kwargs.get('imageTrnOrigChannels'))
-    else:
-        imageOrig = _decode_byte_image(features['imageOrig'],
-                                       kwargs.get('imageTstOrigHeight'),
-                                       kwargs.get('imageTstOrigWidth'),
-                                       kwargs.get('imageTstOrigChannels'))
-        
     fileID = features['fileID']
-    HAB = features['HAB']
-    pOrig = features['pOrig']
+    images = _decode_byte_image(features['images'],
+                                kwargs.get('imageDepthHeight'),
+                                kwargs.get('imageDepthWidth'),
+                                kwargs.get('imageDepthChannels'))
+    pclA = _get_pcl(features['pclA'])
+    pclB = _get_pcl(features['pclB'])
+    tMat = features['tMatTarget']
+    return images, pclA, pclB, tMat, fileID
 
-    #validate_for_nan()
-
-    return imageOrig, image, pOrig, HAB, fileID
-
-def tfrecord_writer(imageOrig, imgPatchOrig, imgPatchPert, pOrig, HAB, tfRecordFolder, tfFileName, fileID):
+def tfrecord_writer(fileID,
+                    pclA, pclB,
+                    imgDepthA, imgDepthB,
+                    tMatTarget,
+                    tfRecFolder, tfFileName):
     """
     Converts a dataset to tfrecords
-    imageOrig, imgPatchOrig, imgPatchPert => will be converted to float32
+    imgDepthA, imgDepthB => int8 a.k.a. char
+    tMatTarget => will be converted to float32
+    pclA, pclB => will be converted to float16
     """
-    #images = data_set.images
-    #labels = data_set.labels
-    #num_examples = data_set.num_examples
-    dtype = np.float32
-    tfRecordPath = tfRecordFolder + tfFileName + ".tfrecords"
-
-    rows = imgPatchOrig.shape[0]
-    cols = imgPatchOrig.shape[1]
+    tfRecordPath = tfRecFolder + tfFileName + ".tfrecords"
+    # Depth Images
+    rows = imgDepthA.shape[0]
+    cols = imgDepthA.shape[1]
     depth = 2
-    stackedImage = np.stack((imgPatchOrig, imgPatchPert), axis=2) #3D array (hieght, width, channels)
+    stackedImage = np.stack((imgDepthA, imgDepthB), axis=2) #3D array (hieght, width, channels)
     flatImage = stackedImage.reshape(rows*cols*depth)
-    flatImage = np.asarray(flatImage, dtype)
+    flatImage = np.asarray(flatImage, np.float32)
     flatImageList = flatImage.tostring()
+    # Point Clouds
+    pclA = pclA.reshape(pclA.shape[0]*pclA.shape[1]) # nx4
+    pclAlist = pclA.tolist()
+    pclB = pclB.reshape(pclB.shape[0]*pclB.shape[1]) # mx4
+    pclBlist = pclB.tolist()
+    # Target Transformation
+    tMatTarget = tMatTarget.reshape(tMatTarget.shape[0]*tMatTarget.shape[1]) # 4x4
+    tMatTargetList = tMatTarget.tolist()
 
-    rows = imageOrig.shape[0]
-    cols = imageOrig.shape[1]
-    depth = 1
-    flatImage = imageOrig.reshape(rows*cols*depth)
-    flatImage = np.asarray(flatImage, dtype)
-    flatImageOrigList = flatImage.tostring()
-
-
-    HABRow = np.asarray([HAB[0][0], HAB[0][1], HAB[0][2], HAB[0][3],
-                         HAB[1][0], HAB[1][1], HAB[1][2], HAB[1][3]], np.float32)
-    HABList = HABRow.tolist()
-    pOrigRow = np.asarray([pOrig[0][0], pOrig[0][1], pOrig[0][2], pOrig[0][3],
-                           pOrig[1][0], pOrig[1][1], pOrig[1][2], pOrig[1][3]], np.float32)
-    pOrigList = pOrigRow.tolist()
     writer = tf.python_io.TFRecordWriter(tfRecordPath)
     example = tf.train.Example(features=tf.train.Features(feature={
         'fileID': _int64_array(fileID),
-        'HAB': _float_nparray(HABList), # 2D np array
-        'pOrig': _float_nparray(pOrigList), # 2D np array
-        'image': _bytes_feature(flatImageList),
-        'imageOrig': _bytes_feature(flatImageOrigList)
+        'images': _bytes_feature(flatImageList),
+        'pclA': _float_nparray(pclAlist), # 2D np array
+        'pclB': _float_nparray(pclBlist), # 2D np array
+        'tMatTarget': _float_nparray(tMatTargetList) # 2D np array
         }))
     writer.write(example.SerializeToString())
     writer.close()
