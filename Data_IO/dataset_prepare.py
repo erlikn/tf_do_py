@@ -146,7 +146,7 @@ def _get_pcl(filePath):
     return xyzi.transpose()
 
 ################################
-def process_dataset(startTime, durationSum, pclFilenames, poseFile, tfRecFolder, i):
+def process_dataset(startTime, durationSum, pclFolder, pclFilenames, poseFile, tfRecFolder, i):
     '''
     pclFilenames: list of pcl file addresses
     poseFile: includes a list of pose files to read
@@ -156,7 +156,7 @@ def process_dataset(startTime, durationSum, pclFilenames, poseFile, tfRecFolder,
         tMatAB (target): A->B  (i -> i+1) 
     '''
     # get i
-    xyzi_A = _get_pcl(pclFilenames[i])
+    xyzi_A = _get_pcl(pclFolder + pclFilenames[i])
     pose_Ao = _get_correct_tmat(poseFile[i])
     imgDepth_A, xyzi_A = get_depth_image_pano_pclView(xyzi_A)
     # get i+1
@@ -184,18 +184,23 @@ def _get_pose_path(poseFolder, seqID):
     return poseFolder + seqID + ".txt"
 ################################
 def _get_file_names(readFolder):
-    return [f for f in listdir(readFolder) if isfile(join(readFolder, f))]
+    filenames = [f for f in listdir(readFolder) if isfile(join(readFolder, f))]
+    filenames.sort()
+    return filenames
 ################################
 def prepare_dataset(datasetType, pclPath, posePath, seqIDs, tfRecFolder):
     durationSum = 0
     for i in range(len(seqIDs)):
         print('Procseeing ', seqIDs[i])
-        poseFile = _get_pose_data(_get_pose_path(posePath, seqIDs[i]))
-        pclFilenames = _get_file_names(_get_pcl_folder(pclPath, seqIDs[i]))
-        pclFilenames.sort()
+        poseFolder = _get_pose_path(posePath, seqIDs[i])
+        poseFile = _get_pose_data(poseFolder)
+        pclFolder = _get_pcl_folder(pclPath, seqIDs[i])
+        pclFilenames = _get_file_names(pclFolder)
         startTime = time.time()
         num_cores = multiprocessing.cpu_count()
-        Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFilenames, poseFile, tfRecFolder, i) for i in range(len(pclFilenames-1)))
+        for i in range(len(pclFilenames)-1):
+            process_dataset(startTime, durationSum, pclFolder, pclFilenames, poseFile, tfRecFolder, i)
+        #Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFilenames, poseFile, tfRecFolder, i) for i in range(len(pclFilenames)-1))
     print('Done')
 
 ############# PATHS
