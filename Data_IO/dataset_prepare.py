@@ -55,6 +55,37 @@ def perturb_writer( ID,
     return
 
 ################################
+def get_depth_image_pano_pclView(xyzi, height=1.6):
+    '''
+    Gets a point cloud
+    Keeps points higher than 'height' value and located on the positive Z=0 plane
+    Returns corresponding depthMap and pclView
+    '''
+    print('0', max(xyzi[0]), min(xyzi[0])) # left/right (-)
+    print('1', max(xyzi[1]), min(xyzi[1])) # up/down (-)
+    print('2', max(xyzi[2]), min(xyzi[2])) # in/out
+    xyzi = xyzi.transpose()
+    first = True
+    for i in range(xyzi.shape[0]):
+        # xyzi[i][2] > 0 means all the points who have depth larger than 0 (positive depth plane)
+        if xyzi[i][2] > 0 and xyzi[i][1] < height:
+            if first:
+                pclview = xyzi[i].reshape(1, 4)
+                first = False
+            else:
+                pclview = np.append(pclview, xyzi[i].reshape(1, 4), axis=0)
+    xyzi = xyzi.transpose()
+    pclview = pclview.transpose()
+    rXYZ = np.sqrt(
+                   np.multiply(pclview[0], pclview[0])+
+                   np.multiply(pclview[1], pclview[1])+
+                   np.multiply(pclview[2], pclview[2]))
+    # 0 left-right, 1 is up-down, 2 is forward-back
+    xT = (pclview[0]/rXYZ).reshape([1, pclview.shape[1]])
+    yT = (pclview[1]/rXYZ).reshape([1, pclview.shape[1]])
+    zT = rXYZ.reshape([1, pclview.shape[1]])
+    return np.append(np.append(xT, yT, axis=0), zT, axis=0), pclview
+################################
 def transform_pcl_2_origin(xyzi_col, tMat2o):
     '''
     pointcloud i, and tMat2o i to origin
@@ -127,11 +158,11 @@ def process_dataset(startTime, durationSum, pclFilenames, poseFile, tfRecFolder,
     # get i
     xyzi_A = _get_pcl(pclFilenames[i])
     pose_Ao = _get_correct_tmat(poseFile[i])
-    imgDepth_A = _get_depthMap(xyzi_A)
+    imgDepth_A, xyzi_A = get_depth_image_pano_pclView(xyzi_A)
     # get i+1
     xyzi_B = _get_pcl(pclFilenames[i+1])
     pose_Bo = _get_correct_tmat(poseFile[i+1])
-    imgDepth_B = _get_depthMap(xyzi_B)
+    imgDepth_B, xyzi_B = get_depth_image_pano_pclView(xyzi_B)
     # get target pose
     pose_AB = _get_tMat_A_2_B(pose_Ao, pose_Bo)
     #
