@@ -134,57 +134,56 @@ def get_depth_image_pano_pclView(xyzi, height=1.6):
     Keeps points higher than 'height' value and located on the positive Z=0 plane
     Returns corresponding depthMap and pclView
     '''
+    '''
+    We found that the plane slop is in between [ -0.1645 , 0.43 ] # [top, down]
+    So any point beyond this should be trimmed.
+    And all points while converting to depthmap should be grouped in this range for Y
+    Regarding X, we set all points with z > 0. This means slops for X are inf
+    
+    We add 2 points to the list holding 2 corners of the image plane
+    normalize points to chunks and then remove the auxiliary points
+
+    [-9.42337227   14.5816927   30.03821182  $ 0.42028627  $  34.69466782]
+    [-1.5519526    -0.26304439  0.28228107   $ -0.16448526 $  1.59919727]
+
+    '''
+    ### DO I NEED THE X SIDE TOO?
+    z = 0.0
+    x = 2.0
+    a = 0.43
+    y = np.sqrt(((a*a)*((x*x)*(x*x)))/(1-(a*a)))
+    xyzi = np.append(xyzi, [[x],[y],[z],[0]], axis=1)
+    x = -2.0
+    a = -0.1645
+    y = np.sqrt(((a*a)*((x*x)*(x*x)))/(1-(a*a)))
+    xyzi = np.append(xyzi, [[x],[y],[z],[0]], axis=1)
     #print('0', max(xyzi[0]), min(xyzi[0])) # left/right (-)
     #print('1', max(xyzi[1]), min(xyzi[1])) # up/down (-)
     #print('2', max(xyzi[2]), min(xyzi[2])) # in/out
+    rXYZ = np.sqrt(np.multiply(pclview[0], pclview[0])+
+                   np.multiply(pclview[1], pclview[1])+
+                   np.multiply(pclview[2], pclview[2]))
     xyzi = xyzi.transpose()
     first = True
-    maxs = np.array([0,0,0,0,0], np.float32)
-    mins = np.array([0,0,0,0,0], np.float32)
     for i in range(xyzi.shape[0]):
-        # xyzi[i][2] > 0 means all the points who have depth larger than 0 (positive depth plane)
-        if xyzi[i][2] > 0: # frontal view, above ground
-            rXYZ = np.sqrt(
-                          np.multiply(xyzi[i][0], xyzi[i][0])+
-                          np.multiply(xyzi[i][1], xyzi[i][1])+
-                          np.multiply(xyzi[i][2], xyzi[i][2]))
-            if xyzi[i][1]/rXYZ > maxs[4]:
-                maxs[0] = xyzi[i][0]
-                maxs[1] = xyzi[i][1]
-                maxs[2] = xyzi[i][2]
-                maxs[3] = xyzi[i][1]/rXYZ
-                maxs[4] = rXYZ
-            if xyzi[i][1]/rXYZ < mins[4]:
-                mins[0] = xyzi[i][0]
-                mins[1] = xyzi[i][1]
-                mins[2] = xyzi[i][2]
-                mins[3] = xyzi[i][1]/rXYZ
-                mins[4] = rXYZ
-    #for i in range(xyzi.shape[0]):
-    #    # xyzi[i][2] > 0 means all the points who have depth larger than 0 (positive depth plane)
-    #    if xyzi[i][2] > 0 and xyzi[i][1] < height: # frontal view, above ground
-    #        rXZ = np.sqrt(
-    #                      np.multiply(xyzi[i][0], xyzi[i][0])+
-    #                      np.multiply(xyzi[i][2], xyzi[i][2]))
-    #        if (xyzi[i][1]/rXZ < 0.5) and (xyzi[i][1]/rXZ > -0.1): # view planes (above ground y=-az) and (below highest y=az)
-    #            if first:
-    #                pclview = xyzi[i].reshape(1, 4)
-    #                first = False
-    #            else:
-    #                pclview = np.append(pclview, xyzi[i].reshape(1, 4), axis=0)
-    #xyzi = xyzi.transpose()
-    #pclview = pclview.transpose()
-    #rXYZ = np.sqrt(
-    #               np.multiply(pclview[0], pclview[0])+
-    #               np.multiply(pclview[1], pclview[1])+
-    #               np.multiply(pclview[2], pclview[2]))
-    ## 0 left-right, 1 is up-down, 2 is forward-back
-    #xT = (pclview[0]/rXYZ).reshape([1, pclview.shape[1]])
-    #yT = (pclview[1]/rXYZ).reshape([1, pclview.shape[1]])
-    #zT = rXYZ.reshape([1, pclview.shape[1]])
-    #depthImage = _make_image(np.append(np.append(xT, yT, axis=0), zT, axis=0))
-    #return depthImage, pclview
-    return maxs, mins
+        # xyzi[i][2] >= 0 means all the points who have depth larger than 0 (positive depth plane)
+        if (xyzi[i][2] >= 0) and (xyzi[i][1] < height): # frontal view, above ground
+            if first:
+                pclview = xyzi[i].reshape(1, 4)
+                first = False
+            else:
+                pclview = np.append(pclview, xyzi[i].reshape(1, 4), axis=0)
+    xyzi = xyzi.transpose()
+    pclview = pclview.transpose()
+    rXYZ = np.sqrt(np.multiply(pclview[0], pclview[0])+
+                   np.multiply(pclview[1], pclview[1])+
+                   np.multiply(pclview[2], pclview[2]))
+    # 0 left-right, 1 is up-down, 2 is forward-back
+    xT = (pclview[0]/rXYZ).reshape([1, pclview.shape[1]])
+    yT = (pclview[1]/rXYZ).reshape([1, pclview.shape[1]])
+    zT = rXYZ.reshape([1, pclview.shape[1]])
+    depthImage = _make_image(np.append(np.append(xT, yT, axis=0), zT, axis=0))
+    return depthImage, pclview
 ################################
 def transform_pcl_2_origin(xyzi_col, tMat2o):
     '''
@@ -235,7 +234,7 @@ def _get_pcl(filePath):
                 pclpoints.append([-1*row[1], -1*row[2], row[0], row[3]])
                 i += 1
         else:
-            print('num pclpoints =', i)
+            #print('num pclpoints =', i)
             break
         j += 1
         #if i == 15000:
@@ -304,16 +303,72 @@ def prepare_dataset(datasetType, pclFolder, poseFolder, seqIDs, tfRecFolder):
         pclFilenames = _get_file_names(pclFolderPath)
         startTime = time.time()
         num_cores = multiprocessing.cpu_count()
-        maxs = np.array([0.0,0.0,0.0,0.0,0.0], np.float32)
-        mins = np.array([0.0,0.0,0.0,0.0,0.0], np.float32)
         count = 0
         for i in range(0,100):#len(pclFilenames)-1):
-            tempmaxs, tempmins = process_dataset(startTime, durationSum, pclFolderPath, pclFilenames, poseFile, tfRecFolder, i)
-            if maxs[4]>tempmaxs[4]:
-                maxs = tempmaxs
-            if mins[4]<tempmins[4]:
-                mins = tempmins
+            process_dataset(startTime, durationSum, pclFolderPath, pclFilenames, poseFile, tfRecFolder, i)
         #Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFilenames, poseFile, tfRecFolder, i) for i in range(len(pclFilenames)-1))
+    print('Done')
+
+################################
+################################
+################################
+################################
+def get_max_mins_pclView(xyzi, height=1.6):
+    xyzi = xyzi.transpose()
+    first = True
+    maxs = np.array([0,0,0,0,-100000], np.float32)
+    mins = np.array([0,0,0,0,100000], np.float32)
+    for i in range(xyzi.shape[0]):
+        # xyzi[i][2] > 0 means all the points who have depth larger than 0 (positive depth plane)
+        if np.abs(xyzi[i][0])<1 and np.abs(xyzi[i][1])<1 and np.abs(xyzi[i][2])<1:
+            continue
+        if xyzi[i][2] > 0: # frontal view, above ground
+            rXYZ = np.sqrt(
+                           np.multiply(xyzi[i][0], xyzi[i][0])+
+                           np.multiply(xyzi[i][1], xyzi[i][1])+
+                           np.multiply(xyzi[i][2], xyzi[i][2]))
+            if (xyzi[i][1] / rXYZ) > maxs[3]:
+                maxs[0] = xyzi[i][0]
+                maxs[1] = xyzi[i][1]
+                maxs[2] = xyzi[i][2]
+                maxs[3] = xyzi[i][1] / rXYZ
+                maxs[4] = rXYZ
+            if (xyzi[i][1] / rXYZ) < mins[3]:
+                mins[0] = xyzi[i][0]
+                mins[1] = xyzi[i][1]
+                mins[2] = xyzi[i][2]
+                mins[3] = xyzi[i][1] / rXYZ
+                mins[4] = rXYZ
+    return maxs, mins
+################################
+def process_maxmins(startTime, durationSum, pclFolder, pclFilenames, poseFile, i):
+    # get i
+    xyzi_A = _get_pcl(pclFolder + pclFilenames[i])
+    pose_Ao = _get_correct_tmat(poseFile[i])
+    maxs, mins = get_max_mins_pclView(xyzi_A)
+    return maxs, mins
+################################
+def find_max_mins(datasetType, pclFolder, poseFolder, seqIDs):
+    durationSum = 0
+    for i in range(len(seqIDs)):
+        print('Procseeing ', seqIDs[i])
+        posePath = _get_pose_path(poseFolder, seqIDs[i])
+        poseFile = _get_pose_data(posePath)
+        print(posePath)
+
+        pclFolderPath = _get_pcl_folder(pclFolder, seqIDs[i])
+        pclFilenames = _get_file_names(pclFolderPath)
+        startTime = time.time()
+        num_cores = multiprocessing.cpu_count()
+        maxs = np.array([0.0,0.0,0.0,0.0,-100000.0], np.float32)
+        mins = np.array([0.0,0.0,0.0,0.0,1000000.0], np.float32)
+        count = 0
+        for i in range(0,100):#len(pclFilenames)-1):
+            tempmaxs, tempmins = process_maxmins(startTime, durationSum, pclFolderPath, pclFilenames, poseFile, i)
+            if maxs[3] < tempmaxs[3]:
+                maxs = tempmaxs
+            if mins[3] > tempmins[3]:
+                mins = tempmins
         print(maxs)
         print(mins)
     print('Done')
@@ -327,5 +382,17 @@ seqIDtest = ['09', '10']
 traintfRecordFLD = "../Data/train_tfrecords/"
 testtfRecordFLD = "../Data/test_tfrecords/"
 
+#find_max_mins("train", pclPath, posePath, seqIDtrain)
+#find_max_mins("test", pclPath, posePath, seqIDtest)
+'''
+We found that the plane slop is in between [ -0.1645 , 0.43 ] # [top, down]
+So any point beyond this should be trimmed.
+And all points while converting to depthmap should be grouped in this range for Y
+Regarding X, we set all points with z > 0. This means slops for X are inf
+
+We add 2 points to the list holding 2 corners of the image plane
+normalize points to chunks and then remove the auxiliary points
+'''
+
 prepare_dataset("train", pclPath, posePath, seqIDtrain, traintfRecordFLD)
-#prepare_dataset("test", pclPath, posePath, seqIDtest, testtfRecordFLD)
+prepare_dataset("test", pclPath, posePath, seqIDtest, testtfRecordFLD)
