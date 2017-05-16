@@ -55,25 +55,102 @@ def perturb_writer( ID,
     return
 
 ################################
+#function img = make_image(depthview)
+#    %depthview(:,1) = depthview(:,1)*(-1);
+#    %depthview(:,2) = depthview(:,2)*(-1);
+#    % 0 - max (not necesseary)
+#    depthview(:,1) = depthview(:,1) + min(depthview(:,1));
+#    depthview(:,2) = depthview(:,2) + min(depthview(:,2));
+#    % there roughly should be 64 height bins group them in 64 clusters
+#    [yHist, yCent] = hist(depthview(:,2), 64);
+#    [xHist, xCent] = hist(depthview(:,1), 512);
+#    % make image of same size
+#    img = zeros(64, 512);
+#    % normalize range values
+#    % depthview(:,3)=depthview(:,3)*(-1) % if back view 
+#    depthview=[depthview; 0,0,0];
+#    depthview=[depthview; 0,0,100];
+#    depthview(:,3) = mat2gray(depthview(:,3));
+#    depthview(:,3) = 1-depthview(:,3);
+#    depthview = depthview(1:end-2,:);
+#    [values, order] = sort(depthview(:,3),'descend');
+#    depthview = depthview(order,:); ;;;
+#    % assign range to pixels
+#    xidxv = [];
+#    yidxv = [];
+#    for i=1:size(depthview,1)
+#        [diff, yidx] = min(abs(yCent-depthview(i,2)));
+#        [diff, xidx] = min(abs(xCent-depthview(i,1)));
+#        yidx=yidx*2;
+#        xidxv = [xidxv xidx];
+
+
+
+#        yidxv = [yidxv yidx];
+#        img(yidx, xidx) = depthview(i,3);
+#        img(yidx+1, xidx) = depthview(i,3);
+#    end
+#end
+def _make_image(depthview):
+    '''
+    Get depthview and generate a depthImage
+    '''
+    depthview = np.append(depthview, [[0,0],[0,0],[0,100]], axis=1)
+    # 0 - max (not necesseary)
+    depthview[0] = depthview[0] - np.min(depthview[0])
+    depthview[1] = depthview[1] - np.min(depthview[1])
+    # there roughly should be 64 height bins group them in 64 clusters
+    xHist, xBinEdges = np.histogram(depthview[0], 512)
+    yHist, yBinEdges = np.histogram(depthview[1], 64)
+    xCent = np.ndarray(shape=xBinEdges.shape[0]-1)
+    for i in range(0, xCent.shape[0]):
+        xCent[i] = (xBinEdges[i]+xBinEdges[i+1])/2
+    yCent = np.ndarray(shape=yBinEdges.shape[0]-1)
+    for i in range(0, yCent.shape[0]):
+        yCent[i] = (yBinEdges[i]+yBinEdges[i+1])/2
+    # make image of size 128x512 : 64 -> 128 (double sampling the height)
+    depthImage = np.zeros(shape=[128, 512])
+    # normalize range values
+    depthview[2] = (depthview[2]-np.min(depthview[2]))/(np.max(depthview[2])-np.min(depthview[2]))
+    depthview[2] = 1-depthview[2]
+    depthview = np.delete(depthview, depthview.shape[1]-1,1)
+    depthview = np.delete(depthview, depthview.shape[1]-1,1)
+    # sorts ascending
+    idxs = np.argsort(depthview[2], kind = 'mergesort')
+    # assign range to pixels
+    for i in range(depthview.shape[1]-1,-1,-1): # traverse descending
+        yidx = np.argmin(np.abs(yCent-depthview[1,i]))
+        xidx = np.argmin(np.abs(xCent-depthview[0,i]))
+        # hieght is 2x64
+        yidx=yidx*2
+        depthImage[yidx, xidx] = depthview[2,i]
+        depthImage[yidx+1, xidx] = depthview[2,i]
+    return depthImage
+
+################################
 def get_depth_image_pano_pclView(xyzi, height=1.6):
     '''
     Gets a point cloud
     Keeps points higher than 'height' value and located on the positive Z=0 plane
     Returns corresponding depthMap and pclView
     '''
-    print('0', max(xyzi[0]), min(xyzi[0])) # left/right (-)
-    print('1', max(xyzi[1]), min(xyzi[1])) # up/down (-)
-    print('2', max(xyzi[2]), min(xyzi[2])) # in/out
+    #print('0', max(xyzi[0]), min(xyzi[0])) # left/right (-)
+    #print('1', max(xyzi[1]), min(xyzi[1])) # up/down (-)
+    #print('2', max(xyzi[2]), min(xyzi[2])) # in/out
     xyzi = xyzi.transpose()
     first = True
     for i in range(xyzi.shape[0]):
         # xyzi[i][2] > 0 means all the points who have depth larger than 0 (positive depth plane)
-        if xyzi[i][2] > 0 and xyzi[i][1] < height:
-            if first:
-                pclview = xyzi[i].reshape(1, 4)
-                first = False
-            else:
-                pclview = np.append(pclview, xyzi[i].reshape(1, 4), axis=0)
+        if xyzi[i][2] > 0 and xyzi[i][1] < height: # frontal view, above ground
+            rXZ = np.sqrt(
+                          np.multiply(xyzi[i][0], xyzi[i][0])+
+                          np.multiply(xyzi[i][2], xyzi[i][2]))
+            if (xyzi[i][1]/rXZ < 0.5) and (xyzi[i][1]/rXZ > -0.1): # view planes (above ground y=-az) and (below highest y=az)
+                if first:
+                    pclview = xyzi[i].reshape(1, 4)
+                    first = False
+                else:
+                    pclview = np.append(pclview, xyzi[i].reshape(1, 4), axis=0)
     xyzi = xyzi.transpose()
     pclview = pclview.transpose()
     rXYZ = np.sqrt(
@@ -84,7 +161,9 @@ def get_depth_image_pano_pclView(xyzi, height=1.6):
     xT = (pclview[0]/rXYZ).reshape([1, pclview.shape[1]])
     yT = (pclview[1]/rXYZ).reshape([1, pclview.shape[1]])
     zT = rXYZ.reshape([1, pclview.shape[1]])
-    return np.append(np.append(xT, yT, axis=0), zT, axis=0), pclview
+    #depthImage = _make_image(np.append(np.append(xT, yT, axis=0), zT, axis=0))
+    depthImage = 0
+    return depthImage, pclview
 ################################
 def transform_pcl_2_origin(xyzi_col, tMat2o):
     '''
@@ -159,6 +238,10 @@ def process_dataset(startTime, durationSum, pclFolder, pclFilenames, poseFile, t
     xyzi_A = _get_pcl(pclFolder + pclFilenames[i])
     pose_Ao = _get_correct_tmat(poseFile[i])
     imgDepth_A, xyzi_A = get_depth_image_pano_pclView(xyzi_A)
+    print(pclFolder + pclFilenames[i])
+    cv2.imshow('img', imgDepth_A)
+    cv2.waitKey(1)
+    return
     # get i+1
     xyzi_B = _get_pcl(pclFilenames[i+1])
     pose_Bo = _get_correct_tmat(poseFile[i+1])
@@ -188,18 +271,23 @@ def _get_file_names(readFolder):
     filenames.sort()
     return filenames
 ################################
-def prepare_dataset(datasetType, pclPath, posePath, seqIDs, tfRecFolder):
+def prepare_dataset(datasetType, pclFolder, poseFolder, seqIDs, tfRecFolder):
     durationSum = 0
     for i in range(len(seqIDs)):
         print('Procseeing ', seqIDs[i])
-        poseFolder = _get_pose_path(posePath, seqIDs[i])
-        poseFile = _get_pose_data(poseFolder)
-        pclFolder = _get_pcl_folder(pclPath, seqIDs[i])
-        pclFilenames = _get_file_names(pclFolder)
+        posePath = _get_pose_path(poseFolder, seqIDs[i])
+        poseFile = _get_pose_data(posePath)
+        print(posePath)
+
+        pclFolderPath = _get_pcl_folder(pclFolder, seqIDs[i])
+        pclFilenames = _get_file_names(pclFolderPath)
         startTime = time.time()
         num_cores = multiprocessing.cpu_count()
-        for i in range(len(pclFilenames)-1):
-            process_dataset(startTime, durationSum, pclFolder, pclFilenames, poseFile, tfRecFolder, i)
+        maxs = np.array([0.0,0.0,0.0,0.0,0.0], np.float32)
+        mins = np.array([0.0,0.0,0.0,0.0,0.0], np.float32)
+        count = 0
+        for i in range(0,100):#len(pclFilenames)-1):
+            process_dataset(startTime, durationSum, pclFolderPath, pclFilenames, poseFile, tfRecFolder, i)
         #Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFilenames, poseFile, tfRecFolder, i) for i in range(len(pclFilenames)-1))
     print('Done')
 
@@ -212,5 +300,5 @@ seqIDtest = ['09', '10']
 traintfRecordFLD = "../Data/train_tfrecords/"
 testtfRecordFLD = "../Data/test_tfrecords/"
 
-prepare_dataset("test", pclPath, posePath, seqIDtest, testtfRecordFLD)
 prepare_dataset("train", pclPath, posePath, seqIDtrain, traintfRecordFLD)
+#prepare_dataset("test", pclPath, posePath, seqIDtest, testtfRecordFLD)
