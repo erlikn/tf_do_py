@@ -34,11 +34,11 @@ def image_process_subMean_divStd_n1p1(img):
     out = (2*((out-out.min())/(out.max()-out.min())))-1
     return out
 
-def perturb_writer( ID,
-                    pclA, pclB,
-                    imgDepthA, imgDepthB,
-                    tMatTarget,
-                    tfRecFolder):
+def odometery_writer(seqID, ID,
+                     pclA, pclB,
+                     imgDepthA, imgDepthB,
+                     tMatTarget,
+                     tfRecFolder):
     '''
     ID: python list with size 2
     pclA, pclB: numpy matrix of size nx4, mx4
@@ -46,59 +46,103 @@ def perturb_writer( ID,
     tmatTarget: numpy matrix of size 4x4
     tfRecFolder: folder name
     '''
-    filename = str(ID[0]) + "_" + str(ID[1])
-    tfrecord_io.tfrecord_writer(fileID,
+    filename = seqID + "_" + str(ID[0]) + "_" + str(ID[1])
+    tfrecord_io.tfrecord_writer(ID,
                                 pclA, pclB,
                                 imgDepthA, imgDepthB,
                                 tMatTarget,
                                 tfRecFolder, filename)
     return
+##################################
+def _add_corner_points(xyzi, rXYZ):
+    '''
+    MOST RECENT CODE A10333
+    Add MAX RANGE for xyzi[0]/rXYZ out of [-1,1]
+    Add MIN RANGE for xyzi[1]/rXYZ out of [-0.12,0.4097]
+    '''
+    ### Add Two corner points with z=0 and x=rand and y calculated based on a, For max min locations
+    ### Add Two min-max depth point to correctly normalize distance values
+    ### Will be removed after histograms
 
-################################
-#function img = make_image(depthview)
-#    %depthview(:,1) = depthview(:,1)*(-1);
-#    %depthview(:,2) = depthview(:,2)*(-1);
-#    % 0 - max (not necesseary)
-#    depthview(:,1) = depthview(:,1) + min(depthview(:,1));
-#    depthview(:,2) = depthview(:,2) + min(depthview(:,2));
-#    % there roughly should be 64 height bins group them in 64 clusters
-#    [yHist, yCent] = hist(depthview(:,2), 64);
-#    [xHist, xCent] = hist(depthview(:,1), 512);
-#    % make image of same size
-#    img = zeros(64, 512);
-#    % normalize range values
-#    % depthview(:,3)=depthview(:,3)*(-1) % if back view 
-#    depthview=[depthview; 0,0,0];
-#    depthview=[depthview; 0,0,100];
-#    depthview(:,3) = mat2gray(depthview(:,3));
-#    depthview(:,3) = 1-depthview(:,3);
-#    depthview = depthview(1:end-2,:);
-#    [values, order] = sort(depthview(:,3),'descend');
-#    depthview = depthview(order,:); ;;;
-#    % assign range to pixels
-#    xidxv = [];
-#    yidxv = [];
-#    for i=1:size(depthview,1)
-#        [diff, yidx] = min(abs(yCent-depthview(i,2)));
-#        [diff, xidx] = min(abs(xCent-depthview(i,1)));
-#        yidx=yidx*2;
-#        xidxv = [xidxv xidx];
+    xyzi = np.append(xyzi, [[-1], [-0.12], [0]], axis=1) # z not needed
+    rXYZ = np.append(rXYZ, 1)
+    xyzi = np.append(xyzi, [[1], [0.4097], [0]], axis=1) # z not needed
+    rXYZ = np.append(rXYZ, 1)
+    #z = 0.0
+    #x = 2.0
+    #a = 0.43
+    #y = np.sqrt(((a*a)*((x*x)*(x*x)))/(1-(a*a)))
+    #xyzi = np.append(xyzi, [[x], [y], [z]], axis=1)
+    #rXYZ = np.append(rXYZ, np.sqrt((x*x)+(y*y)+(z*z)))
+    #x = -2.0
+    #a = -0.1645
+    #y = np.sqrt(((a*a)*((x*x)*(x*x)))/(1-(a*a)))
+    #xyzi = np.append(xyzi, [[x], [y], [z]], axis=1)
+    #rXYZ = np.append(rXYZ, np.sqrt((x*x)+(y*y)+(z*z)))
 
+    xyzi = np.append(xyzi, [[0], [0], [0.1]], axis=1)
+    rXYZ = np.append(rXYZ, 0.001)
+    xyzi = np.append(xyzi, [[0], [0], [100]], axis=1)
+    rXYZ = np.append(rXYZ, 100)
+    return xyzi, rXYZ
 
-
-#        yidxv = [yidxv yidx];
-#        img(yidx, xidx) = depthview(i,3);
-#        img(yidx+1, xidx) = depthview(i,3);
-#    end
-#end
-def _make_image(depthview):
+def _remove_corner_points(xyzi):
+    xyzi = np.delete(xyzi, xyzi.shape[1]-1,1)
+    xyzi = np.delete(xyzi, xyzi.shape[1]-1,1)
+    xyzi = np.delete(xyzi, xyzi.shape[1]-1,1)
+    xyzi = np.delete(xyzi, xyzi.shape[1]-1,1)
+    return xyzi
+##################################
+def _get_plane_view(xyzi, rXYZ):
+    ### Flatten to a plane
+    # 0 left-right, 1 is up-down, 2 is forward-back
+    xT = (xyzi[0]/rXYZ).reshape([1, xyzi.shape[1]])
+    yT = (xyzi[1]/rXYZ).reshape([1, xyzi.shape[1]])
+    zT = rXYZ.reshape([1, xyzi.shape[1]])
+    planeView = np.append(np.append(xT, yT, axis=0), zT, axis=0)
+    return planeView
+##################################
+def _normalize_Z_weighted(z):
+    '''
+    As we have higher accuracy measuring closer points
+    map closer points with higher resolution
+    0---20---40---60---80---100
+     40%  25%  20%  --15%--- 
+    '''
+    for i in range(0, z.shape[0]):
+        if z[i] < 20:
+            z[i] = (0.4*z[i])/20
+        elif z[i] < 40:
+            z[i] = ((0.25*(z[i]-20))/20)+0.4
+        elif z[i] < 60:
+            z[i] = (0.2*(z[i]-40))+0.65
+        else:
+            z[i] = (0.15*(z[i]-60))+0.85
+    return z
+def _make_image(depthview, rXYZ):
     '''
     Get depthview and generate a depthImage
     '''
-    depthview = np.append(depthview, [[0,0],[0,0],[0,100]], axis=1)
-    # 0 - max (not necesseary)
-    depthview[0] = depthview[0] - np.min(depthview[0])
-    depthview[1] = depthview[1] - np.min(depthview[1])
+    '''
+    We found that the plane slop is in between [ -0.1645 , 0.43 ] # [top, down]
+    So any point beyond this should be trimmed.
+    And all points while converting to depthmap should be grouped in this range for Y
+    Regarding X, we set all points with z > 0. This means slops for X are inf
+    
+    We add 2 points to the list holding 2 corners of the image plane
+    normalize points to chunks and then remove the auxiliary points
+
+    [-9.42337227   14.5816927   30.03821182  $ 0.42028627  $  34.69466782]
+    [-1.5519526    -0.26304439  0.28228107   $ -0.16448526 $  1.59919727]
+    '''
+    ### Flatten to a plane
+    depthview = _get_plane_view(depthview, rXYZ)
+    ##### Project to image coordinates using histograms
+    ### Add maximas and minimas. Remove after histograms ----
+    depthview, rXYZ = _add_corner_points(depthview, rXYZ)
+    # Normalize to 0~1    
+    depthview[0] = (depthview[0] - np.min(depthview[0]))/(np.max(depthview[0]) - np.min(depthview[0]))
+    depthview[1] = (depthview[1] - np.min(depthview[1]))/(np.max(depthview[1]) - np.min(depthview[1]))
     # there roughly should be 64 height bins group them in 64 clusters
     xHist, xBinEdges = np.histogram(depthview[0], 512)
     yHist, yBinEdges = np.histogram(depthview[1], 64)
@@ -111,10 +155,11 @@ def _make_image(depthview):
     # make image of size 128x512 : 64 -> 128 (double sampling the height)
     depthImage = np.zeros(shape=[128, 512])
     # normalize range values
-    depthview[2] = (depthview[2]-np.min(depthview[2]))/(np.max(depthview[2])-np.min(depthview[2]))
+    #depthview[2] = (depthview[2]-np.min(depthview[2]))/(np.max(depthview[2])-np.min(depthview[2]))
+    depthview[2] = _normalize_Z_weighted(depthview[2])
     depthview[2] = 1-depthview[2]
-    depthview = np.delete(depthview, depthview.shape[1]-1,1)
-    depthview = np.delete(depthview, depthview.shape[1]-1,1)
+    ### Remove maximas and minimas. -------------------------
+    depthview = _remove_corner_points(depthview)
     # sorts ascending
     idxs = np.argsort(depthview[2], kind = 'mergesort')
     # assign range to pixels
@@ -135,54 +180,31 @@ def get_depth_image_pano_pclView(xyzi, height=1.6):
     Returns corresponding depthMap and pclView
     '''
     '''
-    We found that the plane slop is in between [ -0.1645 , 0.43 ] # [top, down]
-    So any point beyond this should be trimmed.
-    And all points while converting to depthmap should be grouped in this range for Y
-    Regarding X, we set all points with z > 0. This means slops for X are inf
-    
-    We add 2 points to the list holding 2 corners of the image plane
-    normalize points to chunks and then remove the auxiliary points
-
-    [-9.42337227   14.5816927   30.03821182  $ 0.42028627  $  34.69466782]
-    [-1.5519526    -0.26304439  0.28228107   $ -0.16448526 $  1.59919727]
-
+    MOST RECENT CODE A10333
+    remove any point who has xyzi[0]/rXYZ out of [-1,1]
+    remove any point who has xyzi[1]/rXYZ out of [-0.12,0.4097]
     '''
-    ### DO I NEED THE X SIDE TOO?
-    z = 0.0
-    x = 2.0
-    a = 0.43
-    y = np.sqrt(((a*a)*((x*x)*(x*x)))/(1-(a*a)))
-    xyzi = np.append(xyzi, [[x],[y],[z],[0]], axis=1)
-    x = -2.0
-    a = -0.1645
-    y = np.sqrt(((a*a)*((x*x)*(x*x)))/(1-(a*a)))
-    xyzi = np.append(xyzi, [[x],[y],[z],[0]], axis=1)
     #print('0', max(xyzi[0]), min(xyzi[0])) # left/right (-)
     #print('1', max(xyzi[1]), min(xyzi[1])) # up/down (-)
     #print('2', max(xyzi[2]), min(xyzi[2])) # in/out
-    rXYZ = np.sqrt(np.multiply(pclview[0], pclview[0])+
-                   np.multiply(pclview[1], pclview[1])+
-                   np.multiply(pclview[2], pclview[2]))
+    rXYZ = np.sqrt(np.multiply(xyzi[0], xyzi[0])+
+                   np.multiply(xyzi[1], xyzi[1])+
+                   np.multiply(xyzi[2], xyzi[2]))
     xyzi = xyzi.transpose()
     first = True
     for i in range(xyzi.shape[0]):
         # xyzi[i][2] >= 0 means all the points who have depth larger than 0 (positive depth plane)
-        if (xyzi[i][2] >= 0) and (xyzi[i][1] < height): # frontal view, above ground
+        if (xyzi[i][2] >= 0) and (xyzi[i][1] < height) and (xyzi[i][0]/rXYZ[i] > -1) and (xyzi[i][0]/rXYZ[i] < 1) and (xyzi[i][1]/rXYZ[i] > -0.12) and (xyzi[i][1]/rXYZ[i] < 0.4097): # frontal view & above ground & x in range & y in range
             if first:
                 pclview = xyzi[i].reshape(1, 4)
                 first = False
             else:
                 pclview = np.append(pclview, xyzi[i].reshape(1, 4), axis=0)
-    xyzi = xyzi.transpose()
     pclview = pclview.transpose()
     rXYZ = np.sqrt(np.multiply(pclview[0], pclview[0])+
                    np.multiply(pclview[1], pclview[1])+
                    np.multiply(pclview[2], pclview[2]))
-    # 0 left-right, 1 is up-down, 2 is forward-back
-    xT = (pclview[0]/rXYZ).reshape([1, pclview.shape[1]])
-    yT = (pclview[1]/rXYZ).reshape([1, pclview.shape[1]])
-    zT = rXYZ.reshape([1, pclview.shape[1]])
-    depthImage = _make_image(np.append(np.append(xT, yT, axis=0), zT, axis=0))
+    depthImage = _make_image(pclview, rXYZ)
     return depthImage, pclview
 ################################
 def transform_pcl_2_origin(xyzi_col, tMat2o):
@@ -205,7 +227,8 @@ def _get_tMat_A_2_B(tMatA2o, tMatB2o):
     # tMatA2o: A -> Orig
     # tMatB2o: B -> Orig ==> inv(tMatB2o): Orig -> B
     # inv(tMatB2o) * tMatA2o : A -> B
-    return np.matmul(np.matmul(np.linalg.inv(tMatB2o), tMatA2o))
+    tMatA2B = np.matmul(np.linalg.inv(tMatB2o), tMatA2o)
+    return tMatA2B
 
 ################################
 def _get_correct_tmat(poseRow):
@@ -245,7 +268,7 @@ def _get_pcl(filePath):
     return xyzi.transpose()
 
 ################################
-def process_dataset(startTime, durationSum, pclFolder, pclFilenames, poseFile, tfRecFolder, i):
+def process_dataset(startTime, durationSum, pclFolder, seqID, pclFilenames, poseFile, tfRecFolder, i):
     '''
     pclFilenames: list of pcl file addresses
     poseFile: includes a list of pose files to read
@@ -258,19 +281,19 @@ def process_dataset(startTime, durationSum, pclFolder, pclFilenames, poseFile, t
     xyzi_A = _get_pcl(pclFolder + pclFilenames[i])
     pose_Ao = _get_correct_tmat(poseFile[i])
     imgDepth_A, xyzi_A = get_depth_image_pano_pclView(xyzi_A)
-    print(pclFolder + pclFilenames[i])
-    cv2.imshow('img', imgDepth_A)
-    cv2.waitKey(1)
-    return
+    #print(pclFolder + pclFilenames[i])
+    #cv2.imshow('img', imgDepth_A)
+    #cv2.waitKey(1)
+    #return
     # get i+1
-    xyzi_B = _get_pcl(pclFilenames[i+1])
+    xyzi_B = _get_pcl(pclFolder + pclFilenames[i+1])
     pose_Bo = _get_correct_tmat(poseFile[i+1])
     imgDepth_B, xyzi_B = get_depth_image_pano_pclView(xyzi_B)
     # get target pose
     pose_AB = _get_tMat_A_2_B(pose_Ao, pose_Bo)
     #
-    fileID = [i-1, i]
-    perturb_writer(fileID,
+    fileID = [int(seqID), i, i+1]
+    odometery_writer(seqID, fileID,
                    xyzi_A, xyzi_B,
                    imgDepth_A, imgDepth_B,
                    pose_AB,
@@ -304,49 +327,79 @@ def prepare_dataset(datasetType, pclFolder, poseFolder, seqIDs, tfRecFolder):
         startTime = time.time()
         num_cores = multiprocessing.cpu_count()
         count = 0
-        for i in range(0,100):#len(pclFilenames)-1):
-            process_dataset(startTime, durationSum, pclFolderPath, pclFilenames, poseFile, tfRecFolder, i)
-        #Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFilenames, poseFile, tfRecFolder, i) for i in range(len(pclFilenames)-1))
+        #for j in range(0,len(pclFilenames)-1):
+        #    process_dataset(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j)
+        Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j) for j in range(0,len(pclFilenames)-1))
     print('Done')
 
 ################################
 ################################
 ################################
 ################################
+################################
+################################
+def _get_xy_maxmins(depthview, rXYZ):
+    '''
+    Get depthview and generate a depthImage
+    '''
+    '''
+    We found that the plane slop is in between [ -0.1645 , 0.43 ] # [top, down]
+    So any point beyond this should be trimmed.
+    And all points while converting to depthmap should be grouped in this range for Y
+    Regarding X, we set all points with z > 0. This means slops for X are inf
+    
+    We add 2 points to the list holding 2 corners of the image plane
+    normalize points to chunks and then remove the auxiliary points
+
+    [-9.42337227   14.5816927   30.03821182  $ 0.42028627  $  34.69466782]
+    [-1.5519526    -0.26304439  0.28228107   $ -0.16448526 $  1.59919727]
+
+    '''
+    ### Flatten to a plane
+    depthview = _get_plane_view(depthview, rXYZ)
+    ##### Project to image coordinates using histograms
+    # 0 - max (not necesseary)
+    xmin = np.min(depthview[0])
+    xmax = np.max(depthview[0])
+    ymin = np.min(depthview[1])
+    ymax = np.max(depthview[1])
+    return xmin, xmax, ymin, ymax 
+################################
 def get_max_mins_pclView(xyzi, height=1.6):
+    '''
+    Gets a point cloud
+    Keeps points higher than 'height' value and located on the positive Z=0 plane
+    Returns corresponding depthMap and pclView
+    '''
+    #print('0', max(xyzi[0]), min(xyzi[0])) # left/right (-)
+    #print('1', max(xyzi[1]), min(xyzi[1])) # up/down (-)
+    #print('2', max(xyzi[2]), min(xyzi[2])) # in/out
+    rXYZ = np.sqrt(np.multiply(xyzi[0], xyzi[0])+
+                   np.multiply(xyzi[1], xyzi[1])+
+                   np.multiply(xyzi[2], xyzi[2]))
     xyzi = xyzi.transpose()
     first = True
-    maxs = np.array([0,0,0,0,-100000], np.float32)
-    mins = np.array([0,0,0,0,100000], np.float32)
     for i in range(xyzi.shape[0]):
-        # xyzi[i][2] > 0 means all the points who have depth larger than 0 (positive depth plane)
-        if np.abs(xyzi[i][0])<1 and np.abs(xyzi[i][1])<1 and np.abs(xyzi[i][2])<1:
-            continue
-        if xyzi[i][2] > 0: # frontal view, above ground
-            rXYZ = np.sqrt(
-                           np.multiply(xyzi[i][0], xyzi[i][0])+
-                           np.multiply(xyzi[i][1], xyzi[i][1])+
-                           np.multiply(xyzi[i][2], xyzi[i][2]))
-            if (xyzi[i][1] / rXYZ) > maxs[3]:
-                maxs[0] = xyzi[i][0]
-                maxs[1] = xyzi[i][1]
-                maxs[2] = xyzi[i][2]
-                maxs[3] = xyzi[i][1] / rXYZ
-                maxs[4] = rXYZ
-            if (xyzi[i][1] / rXYZ) < mins[3]:
-                mins[0] = xyzi[i][0]
-                mins[1] = xyzi[i][1]
-                mins[2] = xyzi[i][2]
-                mins[3] = xyzi[i][1] / rXYZ
-                mins[4] = rXYZ
-    return maxs, mins
+        # xyzi[i][2] >= 0 means all the points who have depth larger than 0 (positive depth plane)
+        if (xyzi[i][2] >= 0) and (xyzi[i][1] < height): # frontal view, above ground
+            if first:
+                pclview = xyzi[i].reshape(1, 4)
+                first = False
+            else:
+                pclview = np.append(pclview, xyzi[i].reshape(1, 4), axis=0)
+    pclview = pclview.transpose()
+    rXYZ = np.sqrt(np.multiply(pclview[0], pclview[0])+
+                   np.multiply(pclview[1], pclview[1])+
+                   np.multiply(pclview[2], pclview[2]))
+    xmin, xmax, ymin, ymax = _get_xy_maxmins(pclview, rXYZ)
+    return xmin, xmax, ymin, ymax
 ################################
 def process_maxmins(startTime, durationSum, pclFolder, pclFilenames, poseFile, i):
     # get i
     xyzi_A = _get_pcl(pclFolder + pclFilenames[i])
     pose_Ao = _get_correct_tmat(poseFile[i])
-    maxs, mins = get_max_mins_pclView(xyzi_A)
-    return maxs, mins
+    xmin, xmax, ymin, ymax = get_max_mins_pclView(xyzi_A)
+    return xmin, xmax, ymin, ymax
 ################################
 def find_max_mins(datasetType, pclFolder, poseFolder, seqIDs):
     durationSum = 0
@@ -360,17 +413,22 @@ def find_max_mins(datasetType, pclFolder, poseFolder, seqIDs):
         pclFilenames = _get_file_names(pclFolderPath)
         startTime = time.time()
         num_cores = multiprocessing.cpu_count()
-        maxs = np.array([0.0,0.0,0.0,0.0,-100000.0], np.float32)
-        mins = np.array([0.0,0.0,0.0,0.0,1000000.0], np.float32)
-        count = 0
-        for i in range(0,100):#len(pclFilenames)-1):
-            tempmaxs, tempmins = process_maxmins(startTime, durationSum, pclFolderPath, pclFilenames, poseFile, i)
-            if maxs[3] < tempmaxs[3]:
-                maxs = tempmaxs
-            if mins[3] > tempmins[3]:
-                mins = tempmins
-        print(maxs)
-        print(mins)
+        xmaxs = -100000.0
+        xmins = 1000000.0
+        ymaxs = -100000.0
+        ymins = 1000000.0
+        for j in range(0,100):#len(pclFilenames)-1):
+            tempXmin, tempXmax, tempYmin, tempYmax = process_maxmins(startTime, durationSum, pclFolderPath, pclFilenames, poseFile, j)
+            if xmaxs < tempXmax:
+                xmaxs = tempXmax
+            if xmins > tempXmin:
+                xmins = tempXmin
+            if ymaxs < tempYmax:
+                ymaxs = tempYmax
+            if ymins > tempYmin:
+                ymins = tempYmin
+        print('X min, X max: ', xmins, xmaxs)
+        print('Y min, Y max: ', ymins, ymaxs)
     print('Done')
 
 ############# PATHS
@@ -379,8 +437,8 @@ posePath = '../Data/kitti/poses/'
 seqIDtrain = ['00', '01', '02', '03', '04', '05', '06', '07', '08']
 seqIDtest = ['09', '10']
 
-traintfRecordFLD = "../Data/train_tfrecords/"
-testtfRecordFLD = "../Data/test_tfrecords/"
+traintfRecordFLD = "../Data/kitti/train_tfrecords/"
+testtfRecordFLD = "../Data/kitti/test_tfrecords/"
 
 #find_max_mins("train", pclPath, posePath, seqIDtrain)
 #find_max_mins("test", pclPath, posePath, seqIDtest)
