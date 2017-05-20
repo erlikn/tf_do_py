@@ -48,7 +48,7 @@ def image_process_subMean_divStd_n1p1(img):
     out = (2*((out-out.min())/(out.max()-out.min())))-1
     return out
 
-def odometery_writer(seqID, ID,
+def odometery_writer(ID,
                      pclA, pclB,
                      imgDepthA, imgDepthB,
                      tMatTarget,
@@ -60,7 +60,7 @@ def odometery_writer(seqID, ID,
     tmatTarget: numpy matrix of size 4x4
     tfRecFolder: folder name
     '''
-    filename = seqID + "_" + str(ID[0]) + "_" + str(ID[1])
+    filename = str(ID[0]) + "_" + str(ID[1]) + "_" + str(ID[2])
     tfrecord_io.tfrecord_writer(ID,
                                 pclA, pclB,
                                 imgDepthA, imgDepthB,
@@ -322,7 +322,7 @@ def process_dataset(startTime, durationSum, pclFolder, seqID, pclFilenames, pose
     pose_AB = _get_tMat_A_2_B(pose_Ao, pose_Bo)
     #
     fileID = [int(seqID), i, i+1]
-    odometery_writer(seqID, fileID,
+    odometery_writer(fileID,
                    xyzi_A, xyzi_B,
                    imgDepth_A, imgDepth_B,
                    pose_AB,
