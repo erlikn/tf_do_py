@@ -61,12 +61,12 @@ def _get_pcl(pcl):
 def parse_example_proto(exampleSerialized, **kwargs):
     """
         ID: python list with size 2
-        pclA: numpy matrix of size mx4
-        pclB: numpy matrix of size nx4
+        pclA: numpy matrix of size PCLMAXx4
+        pclB: numpy matrix of size PCLMAXx4
         image: numpy matrix of 128x512x2
             imgDepthA: numpy matrix of size 128x512
             imgDepthB: numpy matrix of size 128x512
-        tMatTarget: numpy matrix of size 4x4
+        tMatTarget: numpy matrix of size 3x4
 
         'ID': _int64_feature(IDList),
         'pclA': _float_nparray(pclAList),
@@ -101,9 +101,9 @@ def tfrecord_writer(fileID,
                     tfRecFolder, tfFileName):
     """
     Converts a dataset to tfrecords
-    imgDepthA, imgDepthB => int8 a.k.a. char
-    tMatTarget => will be converted to float32
-    pclA, pclB => will be converted to float16
+    imgDepthA, imgDepthB => int8 a.k.a. char 128x512
+    tMatTarget => will be converted to float32 with size 3x4 12
+    pclA, pclB => will be converted to float16 with size PCLMAXx4
     """
     tfRecordPath = tfRecFolder + tfFileName + ".tfrecords"
     # Depth Images

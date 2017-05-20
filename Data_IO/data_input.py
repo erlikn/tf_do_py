@@ -254,9 +254,9 @@ def inputs(**kwargs):
     Args:
 
     Returns:
-      batchImage: Images. 4D tensor of [batch_size, IMAGE_SIZE, IMAGE_SIZE, 2] size.
-      batchHAB: Labels. 2D tensor of [batch_size, 8] size.
-      batchOrigSqr: Labels. 2D tensor of [batch_size, 8] size.
+      batchImage: Images. 4D tensor of [batch_size, 128, 512, 2] size.
+      batchHAB: 2D tensor of [batch_size, 12] size.
+      batchPCL: 2D tensor of [batch_size, n] size.
     
     Raises:
       ValueError: If no dataDir

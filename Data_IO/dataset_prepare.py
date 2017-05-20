@@ -23,6 +23,20 @@ import multiprocessing
 
 import tfrecord_io
 
+# xyzi[0]/rXYZ out of [-1,1]  this is reveresd
+MIN_X_R = -1
+MAX_X_R = 1
+# xyzi[1]/rXYZ out of [-0.12,0.4097]  this is reveresd
+MIN_Y_R = -0.12
+MAX_Y_R = 0.4097
+# Z in range [0.01, 100]
+MIN_Z = 0.01
+MAX_Z = 100
+
+IMG_ROWS = 64  # makes image of 2x64 = 128
+IMG_COLS = 512
+PCL_ROWS = 62074 # All PCL files should have rows
+
 def image_process_subMean_divStd(img):
     out = img - np.mean(img)
     out = out / img.std()
@@ -54,6 +68,20 @@ def odometery_writer(seqID, ID,
                                 tfRecFolder, filename)
     return
 ##################################
+def _zero_pad(xyzi, num):
+    '''
+    Append xyzi with num 0s to have unified pcl length of 
+    '''
+    if num < 0:
+        print("xyzi shape is", xyzi.shape)
+        print("MAX PCL_ROWS is", PCL_ROWS)
+        raise ValueError('Error... PCL_ROWS should be the unified max of the whole system')
+    elif num > 0:
+        pad = np.zeros([4, num], dtype=float)
+        xyzi = np.append(xyzi, pad, axis=1)
+    # if num is 0 -> do nothing
+    return xyzi
+##################################
 def _add_corner_points(xyzi, rXYZ):
     '''
     MOST RECENT CODE A10333
@@ -64,9 +92,9 @@ def _add_corner_points(xyzi, rXYZ):
     ### Add Two min-max depth point to correctly normalize distance values
     ### Will be removed after histograms
 
-    xyzi = np.append(xyzi, [[-1], [-0.12], [0]], axis=1) # z not needed
+    xyzi = np.append(xyzi, [[MIN_Y_R], [MIN_Y_R], [0]], axis=1) # z not needed
     rXYZ = np.append(rXYZ, 1)
-    xyzi = np.append(xyzi, [[1], [0.4097], [0]], axis=1) # z not needed
+    xyzi = np.append(xyzi, [[MAX_X_R], [MAX_Y_R], [0]], axis=1) # z not needed
     rXYZ = np.append(rXYZ, 1)
     #z = 0.0
     #x = 2.0
@@ -80,10 +108,10 @@ def _add_corner_points(xyzi, rXYZ):
     #xyzi = np.append(xyzi, [[x], [y], [z]], axis=1)
     #rXYZ = np.append(rXYZ, np.sqrt((x*x)+(y*y)+(z*z)))
 
-    xyzi = np.append(xyzi, [[0], [0], [0.1]], axis=1)
-    rXYZ = np.append(rXYZ, 0.001)
-    xyzi = np.append(xyzi, [[0], [0], [100]], axis=1)
-    rXYZ = np.append(rXYZ, 100)
+    xyzi = np.append(xyzi, [[0], [0], [MIN_Z]], axis=1)
+    rXYZ = np.append(rXYZ, MIN_Z*MIN_Z)
+    xyzi = np.append(xyzi, [[0], [0], [MAX_Z]], axis=1)
+    rXYZ = np.append(rXYZ, MAX_Z*MAX_Z)
     return xyzi, rXYZ
 
 def _remove_corner_points(xyzi):
@@ -177,7 +205,7 @@ def get_depth_image_pano_pclView(xyzi, height=1.6):
     '''
     Gets a point cloud
     Keeps points higher than 'height' value and located on the positive Z=0 plane
-    Returns corresponding depthMap and pclView
+    Returns correstempMaxponding depthMap and pclView
     '''
     '''
     MOST RECENT CODE A10333
@@ -205,6 +233,7 @@ def get_depth_image_pano_pclView(xyzi, height=1.6):
                    np.multiply(pclview[1], pclview[1])+
                    np.multiply(pclview[2], pclview[2]))
     depthImage = _make_image(pclview, rXYZ)
+    pclview = _zero_pad(pclview, PCL_ROWS-pclview.shape[1])
     return depthImage, pclview
 ################################
 def transform_pcl_2_origin(xyzi_col, tMat2o):
@@ -327,12 +356,11 @@ def prepare_dataset(datasetType, pclFolder, poseFolder, seqIDs, tfRecFolder):
         startTime = time.time()
         num_cores = multiprocessing.cpu_count()
         count = 0
-        #for j in range(0,len(pclFilenames)-1):
-        #    process_dataset(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j)
-        Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j) for j in range(0,len(pclFilenames)-1))
+        for j in range(0,len(pclFilenames)-1):
+            process_dataset(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j)
+        #Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j) for j in range(0,len(pclFilenames)-1))
     print('Done')
 
-################################
 ################################
 ################################
 ################################
@@ -431,6 +459,66 @@ def find_max_mins(datasetType, pclFolder, poseFolder, seqIDs):
         print('Y min, Y max: ', ymins, ymaxs)
     print('Done')
 
+################################
+################################
+################################
+################################
+################################
+################################
+################################
+def get_max_pclrows(xyzi, height=1.6):
+    '''
+    Gets a point cloud
+    Keeps points higher than 'height' value and located on the positive Z=0 plane
+    Returns corresponding depthMap and pclView
+    '''
+    '''
+    MOST RECENT CODE A10333
+    remove any point who has xyzi[0]/rXYZ out of [-1,1]
+    remove any point who has xyzi[1]/rXYZ out of [-0.12,0.4097]
+    '''
+    #print('0', max(xyzi[0]), min(xyzi[0])) # left/right (-)
+    #print('1', max(xyzi[1]), min(xyzi[1])) # up/down (-)
+    #print('2', max(xyzi[2]), min(xyzi[2])) # in/out
+    rXYZ = np.sqrt(np.multiply(xyzi[0], xyzi[0])+
+                   np.multiply(xyzi[1], xyzi[1])+
+                   np.multiply(xyzi[2], xyzi[2]))
+    xyzi = xyzi.transpose()
+    first = True
+    for i in range(xyzi.shape[0]):
+        # xyzi[i][2] >= 0 means all the points who have depth larger than 0 (positive depth plane)
+        if (xyzi[i][2] >= 0) and (xyzi[i][1] < height) and (xyzi[i][0]/rXYZ[i] > -1) and (xyzi[i][0]/rXYZ[i] < 1) and (xyzi[i][1]/rXYZ[i] > -0.12) and (xyzi[i][1]/rXYZ[i] < 0.4097): # frontal view & above ground & x in range & y in range
+            if first:
+                pclview = xyzi[i].reshape(1, 4)
+                first = False
+            else:
+                pclview = np.append(pclview, xyzi[i].reshape(1, 4), axis=0)
+    rows = pclview.shape[0]
+    return rows
+################################
+def process_pclmaxs(startTime, durationSum, pclFolder, pclFilenames, poseFile, i):
+    # get i
+    xyzi_A = _get_pcl(pclFolder + pclFilenames[i])
+    pose_Ao = _get_correct_tmat(poseFile[i])
+    pclmax = get_max_pclrows(xyzi_A)
+    return pclmax
+################################
+def find_max_PCL(datasetType, pclFolder, poseFolder, seqIDs):
+    durationSum = 0
+    for i in range(len(seqIDs)):
+        print('Procseeing ', seqIDs[i])
+        posePath = _get_pose_path(poseFolder, seqIDs[i])
+        poseFile = _get_pose_data(posePath)
+        print(posePath)
+
+        pclFolderPath = _get_pcl_folder(pclFolder, seqIDs[i])
+        pclFilenames = _get_file_names(pclFolderPath)
+        startTime = time.time()
+        num_cores = multiprocessing.cpu_count()
+        pclmaxList = Parallel(n_jobs=num_cores)(delayed(process_pclmaxs)(startTime, durationSum, pclFolderPath, pclFilenames, poseFile, j) for j in range(0,len(pclFilenames)-1))
+        print('Max', np.max(pclmaxList))
+    print('Done')
+
 ############# PATHS
 pclPath = '../Data/kitti/pointcloud/'
 posePath = '../Data/kitti/poses/'
@@ -451,6 +539,13 @@ Regarding X, we set all points with z > 0. This means slops for X are inf
 We add 2 points to the list holding 2 corners of the image plane
 normalize points to chunks and then remove the auxiliary points
 '''
+
+'''
+To have all point clouds within same dimensions, we should add extra 0 rows to have them all unified
+'''
+#find_max_PCL("train", pclPath, posePath, seqIDtrain)
+#find_max_PCL("test", pclPath, posePath, seqIDtest)
+
 
 prepare_dataset("train", pclPath, posePath, seqIDtrain, traintfRecordFLD)
 prepare_dataset("test", pclPath, posePath, seqIDtest, testtfRecordFLD)
