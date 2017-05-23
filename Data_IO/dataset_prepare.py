@@ -35,7 +35,8 @@ MAX_Z = 100
 
 IMG_ROWS = 64  # makes image of 2x64 = 128
 IMG_COLS = 512
-PCL_ROWS = 62074 # All PCL files should have rows
+PCL_COLS = 62074 # All PCL files should have rows
+PCL_ROWS = 3
 
 def image_process_subMean_divStd(img):
     out = img - np.mean(img)
@@ -74,10 +75,10 @@ def _zero_pad(xyzi, num):
     '''
     if num < 0:
         print("xyzi shape is", xyzi.shape)
-        print("MAX PCL_ROWS is", PCL_ROWS)
-        raise ValueError('Error... PCL_ROWS should be the unified max of the whole system')
+        print("MAX PCL_COLS is", PCL_COLS)
+        raise ValueError('Error... PCL_COLS should be the unified max of the whole system')
     elif num > 0:
-        pad = np.zeros([4, num], dtype=float)
+        pad = np.zeros([xyzi.shape[0], num], dtype=float)
         xyzi = np.append(xyzi, pad, axis=1)
     # if num is 0 -> do nothing
     return xyzi
@@ -215,25 +216,21 @@ def get_depth_image_pano_pclView(xyzi, height=1.6):
     #print('0', max(xyzi[0]), min(xyzi[0])) # left/right (-)
     #print('1', max(xyzi[1]), min(xyzi[1])) # up/down (-)
     #print('2', max(xyzi[2]), min(xyzi[2])) # in/out
-    rXYZ = np.sqrt(np.multiply(xyzi[0], xyzi[0])+
-                   np.multiply(xyzi[1], xyzi[1])+
-                   np.multiply(xyzi[2], xyzi[2]))
+    xyzi = np.delete(xyzi, xyzi.shape[0]-1, 0) # remove intensity
+    rXYZ = np.linalg.norm(xyzi, axis=0)
     xyzi = xyzi.transpose()
     first = True
     for i in range(xyzi.shape[0]):
         # xyzi[i][2] >= 0 means all the points who have depth larger than 0 (positive depth plane)
-        if (xyzi[i][2] >= 0) and (xyzi[i][1] < height) and (xyzi[i][0]/rXYZ[i] > -1) and (xyzi[i][0]/rXYZ[i] < 1) and (xyzi[i][1]/rXYZ[i] > -0.12) and (xyzi[i][1]/rXYZ[i] < 0.4097): # frontal view & above ground & x in range & y in range
+        if (xyzi[i][2] >= 0) and (xyzi[i][1] < height) and (rXYZ[i] > 0) and (xyzi[i][0]/rXYZ[i] > -1) and (xyzi[i][0]/rXYZ[i] < 1) and (xyzi[i][1]/rXYZ[i] > -0.12) and (xyzi[i][1]/rXYZ[i] < 0.4097): # frontal view & above ground & x in range & y in range
             if first:
-                pclview = xyzi[i].reshape(1, 4)
+                pclview = xyzi[i].reshape(xyzi.shape[1], 1)
                 first = False
             else:
-                pclview = np.append(pclview, xyzi[i].reshape(1, 4), axis=0)
-    pclview = pclview.transpose()
-    rXYZ = np.sqrt(np.multiply(pclview[0], pclview[0])+
-                   np.multiply(pclview[1], pclview[1])+
-                   np.multiply(pclview[2], pclview[2]))
-    depthImage = _make_image(pclview, rXYZ)
-    pclview = _zero_pad(pclview, PCL_ROWS-pclview.shape[1])
+                pclview = np.append(pclview, xyzi[i].reshape(xyzi.shape[1], 1), axis=1)
+    rPclview = np.linalg.norm(pclview, axis=0)
+    depthImage = _make_image(pclview, rPclview)
+    pclview = _zero_pad(pclview, PCL_COLS-pclview.shape[1])
     return depthImage, pclview
 ################################
 def transform_pcl_2_origin(xyzi_col, tMat2o):
@@ -256,12 +253,15 @@ def _get_tMat_A_2_B(tMatA2o, tMatB2o):
     # tMatA2o: A -> Orig
     # tMatB2o: B -> Orig ==> inv(tMatB2o): Orig -> B
     # inv(tMatB2o) * tMatA2o : A -> B
+    tMatA2o = np.append(poseRow, [0, 0, 0, 1], axis=1)
+    tamatA2B = np.append(poseRow, [0, 0, 0, 1], axis=1)
     tMatA2B = np.matmul(np.linalg.inv(tMatB2o), tMatA2o)
+    tMatA2B = np.delete(tMatA2B, tMatA2B.shape[1]-1,1)
     return tMatA2B
 
 ################################
-def _get_correct_tmat(poseRow):
-    return (np.array(np.append(poseRow, [0, 0, 0, 1]), dtype=np.float32)).reshape([4,4])
+def _get_3x4_tmat(poseRow):
+    return poseRow.reshape([3,4])
 ################################
 def _get_pcl(filePath):
     '''
@@ -308,7 +308,7 @@ def process_dataset(startTime, durationSum, pclFolder, seqID, pclFilenames, pose
     '''
     # get i
     xyzi_A = _get_pcl(pclFolder + pclFilenames[i])
-    pose_Ao = _get_correct_tmat(poseFile[i])
+    pose_Ao = _get_3x4_tmat(poseFile[i])
     imgDepth_A, xyzi_A = get_depth_image_pano_pclView(xyzi_A)
     #print(pclFolder + pclFilenames[i])
     #cv2.imshow('img', imgDepth_A)
@@ -316,7 +316,7 @@ def process_dataset(startTime, durationSum, pclFolder, seqID, pclFilenames, pose
     #return
     # get i+1
     xyzi_B = _get_pcl(pclFolder + pclFilenames[i+1])
-    pose_Bo = _get_correct_tmat(poseFile[i+1])
+    pose_Bo = _get_3x4_tmat(poseFile[i+1])
     imgDepth_B, xyzi_B = get_depth_image_pano_pclView(xyzi_B)
     # get target pose
     pose_AB = _get_tMat_A_2_B(pose_Ao, pose_Bo)
@@ -339,7 +339,7 @@ def _get_pose_path(poseFolder, seqID):
     return poseFolder + seqID + ".txt"
 ################################
 def _get_file_names(readFolder):
-    filenames = [f for f in listdir(readFolder) if isfile(join(readFolder, f))]
+    filenames = [f for f in listdir(readFolder) if (isfile(join(readFolder, f)) and "bin" in f)]
     filenames.sort()
     return filenames
 ################################
@@ -392,7 +392,7 @@ def _get_xy_maxmins(depthview, rXYZ):
     ymin = np.min(depthview[1])
     ymax = np.max(depthview[1])
     return xmin, xmax, ymin, ymax 
-################################
+
 def get_max_mins_pclView(xyzi, height=1.6):
     '''
     Gets a point cloud
@@ -421,14 +421,14 @@ def get_max_mins_pclView(xyzi, height=1.6):
                    np.multiply(pclview[2], pclview[2]))
     xmin, xmax, ymin, ymax = _get_xy_maxmins(pclview, rXYZ)
     return xmin, xmax, ymin, ymax
-################################
+
 def process_maxmins(startTime, durationSum, pclFolder, pclFilenames, poseFile, i):
     # get i
     xyzi_A = _get_pcl(pclFolder + pclFilenames[i])
     pose_Ao = _get_correct_tmat(poseFile[i])
     xmin, xmax, ymin, ymax = get_max_mins_pclView(xyzi_A)
     return xmin, xmax, ymin, ymax
-################################
+
 def find_max_mins(datasetType, pclFolder, poseFolder, seqIDs):
     durationSum = 0
     for i in range(len(seqIDs)):
@@ -495,14 +495,14 @@ def get_max_pclrows(xyzi, height=1.6):
                 pclview = np.append(pclview, xyzi[i].reshape(1, 4), axis=0)
     rows = pclview.shape[0]
     return rows
-################################
+
 def process_pclmaxs(startTime, durationSum, pclFolder, pclFilenames, poseFile, i):
     # get i
     xyzi_A = _get_pcl(pclFolder + pclFilenames[i])
     pose_Ao = _get_correct_tmat(poseFile[i])
     pclmax = get_max_pclrows(xyzi_A)
     return pclmax
-################################
+
 def find_max_PCL(datasetType, pclFolder, poseFolder, seqIDs):
     durationSum = 0
     for i in range(len(seqIDs)):

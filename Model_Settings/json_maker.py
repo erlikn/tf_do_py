@@ -33,6 +33,11 @@ imageDepthChannels_desc = "Depth Image channels"
 imageDepthHeight = 128
 imageDepthWidth = 512
 imageDepthChannels = 2
+
+pclRows_desc = "Maximum row size of Point Cloud" # All PCL files should have rows
+pclCols_desc = "Number of columns in the Point Cloud"
+pclRows = 62074 # All PCL files should have rows
+pclCols = 
 ####################################################################################
 ####################################################################################
 ####################################################################################

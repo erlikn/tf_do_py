@@ -61,8 +61,8 @@ def _get_pcl(pcl):
 def parse_example_proto(exampleSerialized, **kwargs):
     """
         ID: python list with size 2
-        pclA: numpy matrix of size PCLMAXx4
-        pclB: numpy matrix of size PCLMAXx4
+        pclA: numpy matrix of size 3xPCL_COLS
+        pclB: numpy matrix of size 3xPCL_COLS
         image: numpy matrix of 128x512x2
             imgDepthA: numpy matrix of size 128x512
             imgDepthB: numpy matrix of size 128x512
@@ -76,7 +76,7 @@ def parse_example_proto(exampleSerialized, **kwargs):
     """
 
     featureMap = {
-        'fileID': tf.FixedLenFeature([2], dtype=tf.int64),
+        'fileID': tf.FixedLenFeature([3], dtype=tf.int64),
         'images': tf.FixedLenFeature([], dtype=tf.string, default_value=''),
         'pclA': tf.FixedLenFeature([], dtype=tf.float32, default_value=''),
         'pclB': tf.FixedLenFeature([], dtype=tf.float32, default_value=''),
@@ -89,7 +89,7 @@ def parse_example_proto(exampleSerialized, **kwargs):
                                 kwargs.get('imageDepthHeight'),
                                 kwargs.get('imageDepthWidth'),
                                 kwargs.get('imageDepthChannels'))
-    pclA = _get_pcl(features['pclA'])
+    pclA = _get_pcl(features['pclA'], kwargs.get['pclRows'], kwargs.get['pclCols'])
     pclB = _get_pcl(features['pclB'])
     tMat = features['tMatTarget']
     return images, pclA, pclB, tMat, fileID
@@ -101,9 +101,10 @@ def tfrecord_writer(fileID,
                     tfRecFolder, tfFileName):
     """
     Converts a dataset to tfrecords
+    fileID = seqID, i, i+1
     imgDepthA, imgDepthB => int8 a.k.a. char 128x512
     tMatTarget => will be converted to float32 with size 3x4 12
-    pclA, pclB => will be converted to float16 with size PCLMAXx4
+    pclA, pclB => will be converted to float16 with size 3xPCLCOLS
     """
     tfRecordPath = tfRecFolder + tfFileName + ".tfrecords"
     # Depth Images
