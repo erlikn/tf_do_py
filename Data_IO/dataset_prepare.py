@@ -82,7 +82,7 @@ def _zero_pad(xyzi, num):
         xyzi = np.append(xyzi, pad, axis=1)
     # if num is 0 -> do nothing
     return xyzi
-##################################
+
 def _add_corner_points(xyzi, rXYZ):
     '''
     MOST RECENT CODE A10333
@@ -121,7 +121,7 @@ def _remove_corner_points(xyzi):
     xyzi = np.delete(xyzi, xyzi.shape[1]-1,1)
     xyzi = np.delete(xyzi, xyzi.shape[1]-1,1)
     return xyzi
-##################################
+
 def _get_plane_view(xyzi, rXYZ):
     ### Flatten to a plane
     # 0 left-right, 1 is up-down, 2 is forward-back
@@ -130,7 +130,6 @@ def _get_plane_view(xyzi, rXYZ):
     zT = rXYZ.reshape([1, xyzi.shape[1]])
     planeView = np.append(np.append(xT, yT, axis=0), zT, axis=0)
     return planeView
-##################################
 def _normalize_Z_weighted(z):
     '''
     As we have higher accuracy measuring closer points
@@ -200,8 +199,6 @@ def _make_image(depthview, rXYZ):
         depthImage[yidx, xidx] = depthview[2,i]
         depthImage[yidx+1, xidx] = depthview[2,i]
     return depthImage
-
-################################
 def get_depth_image_pano_pclView(xyzi, height=1.6):
     '''
     Gets a point cloud
@@ -253,16 +250,14 @@ def _get_tMat_A_2_B(tMatA2o, tMatB2o):
     # tMatA2o: A -> Orig
     # tMatB2o: B -> Orig ==> inv(tMatB2o): Orig -> B
     # inv(tMatB2o) * tMatA2o : A -> B
-    tMatA2o = np.append(poseRow, [0, 0, 0, 1], axis=1)
-    tamatA2B = np.append(poseRow, [0, 0, 0, 1], axis=1)
+    tMatA2o = np.append(tMatA2o, [[0, 0, 0, 1]], axis=0)
+    tMatB2o = np.append(tMatB2o, [[0, 0, 0, 1]], axis=0)
     tMatA2B = np.matmul(np.linalg.inv(tMatB2o), tMatA2o)
-    tMatA2B = np.delete(tMatA2B, tMatA2B.shape[1]-1,1)
+    tMatA2B = np.delete(tMatA2B, tMatA2B.shape[0]-1, 0)
     return tMatA2B
 
-################################
 def _get_3x4_tmat(poseRow):
     return poseRow.reshape([3,4])
-################################
 def _get_pcl(filePath):
     '''
     Get a bin file address and read it into a numpy matrix
@@ -296,7 +291,6 @@ def _get_pcl(filePath):
     xyzi = np.array(pclpoints, dtype=np.float32)
     return xyzi.transpose()
 
-################################
 def process_dataset(startTime, durationSum, pclFolder, seqID, pclFilenames, poseFile, tfRecFolder, i):
     '''
     pclFilenames: list of pcl file addresses
@@ -322,27 +316,24 @@ def process_dataset(startTime, durationSum, pclFolder, seqID, pclFilenames, pose
     pose_AB = _get_tMat_A_2_B(pose_Ao, pose_Bo)
     #
     fileID = [int(seqID), i, i+1]
-    odometery_writer(fileID,
-                   xyzi_A, xyzi_B,
-                   imgDepth_A, imgDepth_B,
-                   pose_AB,
+    odometery_writer(fileID,# 3 ints
+                   xyzi_A, xyzi_B,# 3xPCL_COLS
+                   imgDepth_A, imgDepth_B,# 128x512
+                   pose_AB,# 3x4
                    tfRecFolder)
 
 ################################
 def _get_pose_data(posePath):
     return np.loadtxt(open(posePath, "r"), delimiter=" ")
-################################
 def _get_pcl_folder(pclFolder, seqID):
     return pclFolder + seqID + '/' + 'velodyne/'
-################################
 def _get_pose_path(poseFolder, seqID):
     return poseFolder + seqID + ".txt"
-################################
 def _get_file_names(readFolder):
     filenames = [f for f in listdir(readFolder) if (isfile(join(readFolder, f)) and "bin" in f)]
     filenames.sort()
     return filenames
-################################
+
 def prepare_dataset(datasetType, pclFolder, poseFolder, seqIDs, tfRecFolder):
     durationSum = 0
     for i in range(len(seqIDs)):
@@ -356,9 +347,9 @@ def prepare_dataset(datasetType, pclFolder, poseFolder, seqIDs, tfRecFolder):
         startTime = time.time()
         num_cores = multiprocessing.cpu_count()
         count = 0
-        for j in range(0,len(pclFilenames)-1):
-            process_dataset(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j)
-        #Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j) for j in range(0,len(pclFilenames)-1))
+        #for j in range(0,len(pclFilenames)-1):
+        #    process_dataset(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j)
+        Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j) for j in range(0,len(pclFilenames)-1))
     print('Done')
 
 ################################

@@ -66,7 +66,7 @@ def parse_example_proto(exampleSerialized, **kwargs):
         image: numpy matrix of 128x512x2
             imgDepthA: numpy matrix of size 128x512
             imgDepthB: numpy matrix of size 128x512
-        tMatTarget: numpy matrix of size 3x4
+        tMatTarget: numpy matrix of size 3x4 = 12
 
         'ID': _int64_feature(IDList),
         'pclA': _float_nparray(pclAList),
@@ -74,24 +74,38 @@ def parse_example_proto(exampleSerialized, **kwargs):
         'image': _bytes_feature(flatImageList)
         'tMatTarget': _float_nparray(tMatist), # 2D np array
     """
+    """
+    KWARGS:
+        imageDepthRows = 128
+        imageDepthCols = 512
+        imageDepthChannels = 2
 
+        pclRows = 3
+        pclCols = 62074
+
+        tMatRows = 3
+        tMatCols = 4
+    """
     featureMap = {
         'fileID': tf.FixedLenFeature([3], dtype=tf.int64),
         'images': tf.FixedLenFeature([], dtype=tf.string, default_value=''),
         'pclA': tf.FixedLenFeature([], dtype=tf.float32, default_value=''),
         'pclB': tf.FixedLenFeature([], dtype=tf.float32, default_value=''),
-        'tMatTarget': tf.FixedLenFeature([8], dtype=tf.float32)
+        'tMatTarget': tf.FixedLenFeature([12], dtype=tf.float32)
         }
     features = tf.parse_single_example(exampleSerialized, featureMap)
 
     fileID = features['fileID']
     images = _decode_byte_image(features['images'],
-                                kwargs.get('imageDepthHeight'),
-                                kwargs.get('imageDepthWidth'),
+                                kwargs.get('imageDepthRows'),
+                                kwargs.get('imageDepthCols'),
                                 kwargs.get('imageDepthChannels'))
     pclA = _get_pcl(features['pclA'], kwargs.get['pclRows'], kwargs.get['pclCols'])
-    pclB = _get_pcl(features['pclB'])
+    pclB = _get_pcl(features['pclB'], kwargs.get['pclRows'], kwargs.get['pclCols'])
     tMat = features['tMatTarget']
+
+    # PCLs will hold padded [0, 0, 0, 0] points at the end that will be ignored during usage
+    # However, they will be kept to unify matrix col size for valid tensor operations 
     return images, pclA, pclB, tMat, fileID
 
 def tfrecord_writer(fileID,
@@ -103,7 +117,7 @@ def tfrecord_writer(fileID,
     Converts a dataset to tfrecords
     fileID = seqID, i, i+1
     imgDepthA, imgDepthB => int8 a.k.a. char 128x512
-    tMatTarget => will be converted to float32 with size 3x4 12
+    tMatTarget => will be converted to float32 with size 3x4 = 12
     pclA, pclB => will be converted to float16 with size 3xPCLCOLS
     """
     tfRecordPath = tfRecFolder + tfFileName + ".tfrecords"
