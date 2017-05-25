@@ -1,8 +1,3 @@
-# TODO
-# REPLACE dataDir WITH data['dataDir']
-
-
-
 import json
 import collections
 import numpy as np
@@ -12,7 +7,7 @@ def write_json_file(filename, datafile):
     filename = 'Model_Settings/'+filename
     datafile = collections.OrderedDict(sorted(datafile.items()))
     with open(filename, 'w') as outFile:
-        json.dump(datafile, outFile, indent = 0)
+        json.dump(datafile, outFile, indent=0)
 
 def _set_folders(folderPath):
     if not os.path.exists(folderPath):
@@ -24,65 +19,39 @@ def _set_folders(folderPath):
 ####################################################################################
 ####################################################################################
 ####################################################################################
-
-
-# Input Parameters
-imageDepthRows_desc = "Depth Image Height (ROWS)"
-imageDepthCols_desc = "Depth Image Width (COLS)"
-imageDepthChannels_desc = "Depth Image channels, number of stacked images"
-imageDepthRows = 128
-imageDepthCols = 512
-imageDepthChannels = 2
-
-pclRows_desc = "3 rows, xyz of Point Cloud" 
-pclCols_desc = "Unified number of points (columns) in the Point Cloud"
-pclRows = 3
-pclCols = 62074 # All PCL files should have same cols
-
-tMatRows_desc = "rows in transformation matrix"
-tMatCols_desc = "cols in transformation matrix"
-tMatRows = 3
-tMatCols = 4
-####################################################################################
-####################################################################################
-####################################################################################
-####################################################################################
-
 # Twin Common Parameters
 trainLogDirBase = '../Data/128_logs/tfdh_twin_py_logs/train_logs/'
 testLogDirBase = '../Data/128_logs/tfdh_twin_py_logs/test_logs/'
-warpedImageTrainBase = '../Data/128_train_tfrecords_iterative/'
-warpedImageTestBase = '../Data/128_test_tfrecords_iterative/'
-
-# Shared Descriptions
-modelName_desc = "Name of the model file to be loaded from Model_Factory"
-usefp16_desc = "Use 16 bit floating point precision"
-pretrainedModelCheckpointPath_desc = "If specified, restore this pretrained model before beginning any training"
-trainDataDir_desc = "Directory to read training samples"
-testDataDir_desc = "Directory to read test samples"
+warpedTrainDirBase = '../Data/128_train_tfrecords_iterative/'
+warpedTestDirBase = '../Data/128_test_tfrecords_iterative/'
+####################################################################################
+# Data Parameters
 numTrainDatasetExamples_desc = "Number of images to process in train dataset"
 numTestDatasetExamples_desc = "Number of images to process in test dataset"
-trainLogDir_desc = "Directory where to write train event logs and checkpoints"
-testLogDir_desc = "Directory where to write test event logs and checkpoints"
+trainDataDir_desc = "Directory to read training samples"
+testDataDir_desc = "Directory to read test samples"
 warpedTrainDataDir_desc = "Directory where to write wrapped train images"
 warpedTestDataDir_desc = "Directory where to write wrapped test images"
-writeWarpedImages_desc = "Flag showing if warped images should be written"
-
-
-imageTrnOrigHeight_desc = "train original image height"
-imageTrnOrigWidth_desc = "train original image width"
-imageTrnOrigChannels_desc = "train original image channels"
-imageTstOrigHeight_desc = "test original image height"
-imageTstOrigWidth_desc = "test original image width"
-imageTstOrigChannels_desc = "test original image channels"
-outputSize_desc = "Final output size"
+trainLogDir_desc = "Directory where to write train event logs and checkpoints"
+testLogDir_desc = "Directory where to write test event logs and checkpoints"
+writeWarped_desc = "Flag showing if warped images should be written"
+pretrainedModelCheckpointPath_desc = "If specified, restore this pretrained model before beginning any training"
+# Image Parameters
+imageDepthRows_desc = "Depth Image Height (ROWS)"
+imageDepthCols_desc = "Depth Image Width (COLS)"
+imageDepthChannels_desc = "Depth Image channels, number of stacked images"
+# PCL Parameters
+pclRows_desc = "3 rows, xyz of Point Cloud"
+pclCols_desc = "Unified number of points (columns) in the Point Cloud"
+# tMat Parameters
+tMatRows_desc = "rows in transformation matrix"
+tMatCols_desc = "cols in transformation matrix"
+# Model Parameters
+modelName_desc = "Name of the model file to be loaded from Model_Factory"
 modelShape_desc = "Network model with 8 convolutional layers with 2 fully connected layers"
 numParallelModules_desc = "Number of parallel modules of the network"
-trainBatchSize_desc = "Batch size of input data for train"
-testBatchSize_desc = "Batch size of input data for test"
 batchNorm_desc = "Should we use batch normalization"
 weightNorm_desc = "Should we use weight normalization"
-warpOriginalImage_desc = "Flag to warp whole original image to produce pert or just the patch"
 optimizer_desc = "Type of optimizer to be used [AdamOptimizer, MomentumOptimizer, GradientDescentOptimizer]"
 initialLearningRate_desc = "Initial learning rate."
 learningRateDecayFactor_desc = "Learning rate decay factor"
@@ -91,160 +60,74 @@ momentum_desc = "Momentum Optimizer: momentum"
 epsilon_desc = "epsilon value used in AdamOptimizer"
 dropOutKeepRate_desc = "Keep rate for drop out"
 clipNorm_desc = "Gradient global normalization clip value"
+lossFunction_desc = "Indicates type of the loss function to be used [L2, CrossEntropy, ..]"
+# Train Parameters
+trainBatchSize_desc = "Batch size of input data for train"
+testBatchSize_desc = "Batch size of input data for test"
+outputSize_desc = "Final output size"
 trainMaxSteps_desc = "Number of batches to run"
 testMaxSteps_desc = "Number of batches to run during test. numTestDatasetExamples = testMaxSteps x testBatchSize" 
-lossFunction_desc = "Indicates type of the loss function to be used [L2, CrossEntropy, ..]"
-
-initExistingWeights_desc = "Should we load existing weights for training? Leave blank if not"
-tuneExistingWeights_desc = "Should any reloaded weights be tuned?"
-fineTune_desc = "If set, randomly initialize the final layer of weights in order to train the network on a new task"
+usefp16_desc = "Use 16 bit floating point precision"
 logDevicePlacement_desc = "Whether to log device placement"
 
-# Network Parameters
-modelName = 'twin_cnn_4p4l2f'
-
-usefp16 = False
-pretrainedModelCheckpointPath = ''
-trainDataDir = '../Data/128_train_tfrecords'
-testDataDir = '../Data/128_test_tfrecords'
-numTrainDatasetExamples = 577783
-numTestDatasetExamples = 25000
-trainLogDir = trainLogDirBase+'170127_TWN_MOM_W'
-testLogDir = testLogDirBase+'170127_TWN_MOM_W'
-warpedTrainDataDir = warpedImageTrainBase+' '
-warpedTestDataDir = warpedImageTestBase+' '
-writeWarpedImages = False
-
-
-
-outputSize = 8
-modelShape = [64, 64, 64, 64, 128, 128, 128, 128, 1024]
-numParallelModules = 2
-trainBatchSize = 20
-testBatchSize = 20
-batchNorm = False
-weightNorm = True
-warpOriginalImage = True
-optimizer = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
-initialLearningRate = 0.005
-learningRateDecayFactor = 0.1
-numEpochsPerDecay = 30000.0
-momentum = 0.9
-epsilon = 0.1
-dropOutKeepRate = 0.5
-clipNorm = 1.0
-trainMaxSteps = 90000
-testMaxSteps = int(np.ceil(numTestDatasetExamples/testBatchSize))
-lossFunction = 'L2'
-
-initExistingWeights = ''
-tuneExistingWeights = True
-fineTune = False
-logDevicePlacement = False
-
-data = {'modelName' : modelName,
-
-        'usefp16' : usefp16,
-        'pretrainedModelCheckpointPath' : pretrainedModelCheckpointPath,
-        'trainDataDir' : trainDataDir,
-        'testDataDir' : testDataDir,
-        'numTrainDatasetExamples' : numTrainDatasetExamples,
-        'numTestDatasetExamples' : numTestDatasetExamples,
-        'trainLogDir' : trainLogDir,
-        'testLogDir' : testLogDir,
-        'warpedTrainDataDir' : warpedTrainDataDir,
-        'warpedTestDataDir' : warpedTestDataDir,
-        'writeWarpedImages' : writeWarpedImages,
-
-        'imageHeight' : imageHeight,
-        'imageWidth' : imageWidth,
-        'imageChannels' : imageChannels,
-        'imageTrnOrigHeight' : imageTrnOrigHeight,
-        'imageTrnOrigWidth' : imageTrnOrigWidth,
-        'imageTrnOrigChannels' : imageTrnOrigChannels,
-        'imageTstOrigHeight' : imageTstOrigHeight,
-        'imageTstOrigWidth' : imageTstOrigWidth,
-        'imageTstOrigChannels' : imageTstOrigChannels,
-        'outputSize' : outputSize,
-        'modelShape' : modelShape,
-        'numParallelModules' : numParallelModules,
-        'trainBatchSize' : trainBatchSize,
-        'testBatchSize' : testBatchSize,
-        'batchNorm' : batchNorm,
-        'weightNorm' : weightNorm,
-        'warpOriginalImage' : warpOriginalImage,
-        'optimizer' : optimizer,
-        'initialLearningRate' : initialLearningRate,
-        'learningRateDecayFactor' : learningRateDecayFactor,
-        'numEpochsPerDecay' : numEpochsPerDecay,
-        'momentum' : momentum,
-        'epsilon' : epsilon,
-        'dropOutKeepRate' : dropOutKeepRate,
-        'clipNorm' : clipNorm,
-        'trainMaxSteps' : trainMaxSteps,
-        'testMaxSteps' : testMaxSteps,
-        'lossFunction' : lossFunction,
-
-        'initExistingWeights' : initExistingWeights,
-        'tuneExistingWeights' : tuneExistingWeights,
-        'fineTune' : fineTune,
-        'logDevicePlacement' : logDevicePlacement,
-
-
-        'modelName_desc' : modelName_desc,
-
-        'usefp16_desc' : usefp16_desc,
-        'pretrainedModelCheckpointPath_desc' : pretrainedModelCheckpointPath_desc,
-        'trainDataDir_desc' : trainDataDir_desc,
-        'testDataDir_desc' : testDataDir_desc,
-        'numTrainDatasetExamples_desc' : numTrainDatasetExamples_desc,
-        'numTestDatasetExamples_desc' : numTestDatasetExamples_desc,
-        'trainLogDir_desc' : trainLogDir_desc,
-        'testLogDir_desc' : testLogDir_desc,
-        'warpedTrainDataDir_desc' : warpedTrainDataDir_desc,
-        'warpedTestDataDir_desc' : warpedTestDataDir_desc,
-        'writeWarpedImages_desc' : writeWarpedImages_desc,
-
-        'imageHeight_desc' : imageHeight_desc,
-        'imageWidth_desc' : imageWidth_desc,
-        'imageChannels_desc' : imageChannels_desc,
-        'imageTrnOrigHeight_desc' : imageTrnOrigHeight_desc,
-        'imageTrnOrigWidth_desc' : imageTrnOrigWidth_desc,
-        'imageTrnOrigChannels_desc' : imageTrnOrigChannels_desc,
-        'imageTstOrigHeight_desc' : imageTstOrigHeight_desc,
-        'imageTstOrigWidth_desc' : imageTstOrigWidth_desc,
-        'imageTstOrigChannels_desc' : imageTstOrigChannels_desc,
-        'outputSize_desc' : outputSize_desc,
-        'modelShape_desc' : modelShape_desc,
-        'numParallelModules_desc' : numParallelModules_desc,
-        'trainBatchSize_desc' : trainBatchSize_desc,
-        'testBatchSize_desc' : testBatchSize_desc,
-        'batchNorm_desc' : batchNorm_desc,
-        'weightNorm_desc' : weightNorm_desc,
-        'warpOriginalImage_desc' : warpOriginalImage_desc,
-        'optimizer_desc' : optimizer_desc,
-        'initialLearningRate_desc' : initialLearningRate_desc,
-        'learningRateDecayFactor_desc' : learningRateDecayFactor_desc,
-        'numEpochsPerDecay_desc' : numEpochsPerDecay_desc,
-        'momentum_desc' : momentum_desc,
-        'epsilon_desc' : epsilon_desc,
-        'dropOutKeepRate_desc' : dropOutKeepRate_desc,
-        'clipNorm_desc' : clipNorm_desc,
-        'trainMaxSteps_desc' : trainMaxSteps_desc,
-        'testMaxSteps_desc' : testMaxSteps_desc,
-        'lossFunction_desc' : lossFunction_desc,
-
-        'initExistingWeights_desc' : initExistingWeights_desc,
-        'tuneExistingWeights_desc' : tuneExistingWeights_desc,
-        'fineTune_desc' : fineTune_desc,
-        'logDevicePlacement_desc' : logDevicePlacement_desc
-        }
-
+data = {
+    # Data Parameters
+    'numTrainDatasetExamples' : 20400,
+    'numTestDatasetExamples' : 2790,
+    'trainDataDir' : '../Data/kitti/128_train_tfrecords',
+    'testDataDir' : '../Data/kitti/128_test_tfrecords',
+    'warpedTrainDataDir' : warpedTrainDirBase+'',
+    'warpedTestDataDir' : warpedTestDirBase+'',
+    'trainLogDir' : trainLogDirBase+'',
+    'testLogDir' : testLogDirBase+'',
+    'writeWarped' : False,
+    'pretrainedModelCheckpointPath' : '',
+    # Image Parameters
+    'imageDepthRows' : 128,
+    'imageDepthCols' : 512,
+    'imageDepthChannels' : 2, # All PCL files should have same cols
+    # PCL Parameters
+    'pclRows' : 3,
+    'pclCols' : 62074,
+    # tMat Parameters
+    'tMatRows' : 3,
+    'tMatCols' : 4,
+    # Model Parameters
+    'modelName' : '',
+    'modelShape' : [64, 64, 64, 64, 128, 128, 128, 128, 1024],
+    'numParallelModules' : 2,
+    'batchNorm' : True,
+    'weightNorm' : False,
+    'optimizer' : 'MomentumOptimizer', # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
+    'initialLearningRate' : 0.005,
+    'learningRateDecayFactor' : 0.1,
+    'numEpochsPerDecay' : 10000.0,
+    'momentum' : 0.9,
+    'epsilon' : 0.1,
+    'dropOutKeepRate' : 0.5,
+    'clipNorm' : 1.0,
+    'lossFunction' : 'L2',
+    # Train Parameters
+    'trainBatchSize' : 64,
+    'testBatchSize' : 64,
+    'outputSize' : 12, # 3x4 = tMatRows x tMatCols
+    'trainMaxSteps' : 30000,
+    'testMaxSteps' : 1,
+    'usefp16' : False,
+    'logDevicePlacement' : False
+    }
+data['testMaxSteps'] = int(np.ceil(data['numTestDatasetExamples']/data['testBatchSize']))
+####################################################################################
+####################################################################################
+####################################################################################
+####################################################################################
 ##############
-reCompileJSON=True
+reCompileJSON = True
 
 ############## TWIN
 def write_twin():
+    reCompileTwins = True
+    NOrecompileTwins = False
     # Twin Common Parameters
     trainLogDirBase = '../Data/128_logs/tfdh_twin_py_logs/train_logs/'
     testLogDirBase = '../Data/128_logs/tfdh_twin_py_logs/test_logs/'
@@ -252,10 +135,10 @@ def write_twin():
     testDataDir = '../Data/128_test_tfrecords'
 
     data['modelName'] = 'twin_cnn_4p4l2f'
-    
+
     writeWarpedImages = False
 
-    if reCompileJSON:
+    if reCompileTwins:
         data['trainLogDir'] = trainLogDirBase+'170127_TWN_MOM_W'
         data['testLogDir'] = testLogDirBase+'170127_TWN_MOM_W'
         data['trainMaxSteps'] = 90000
@@ -268,7 +151,7 @@ def write_twin():
         data['weightNorm'] = True
         write_json_file('170127_TWN_MOM_W.json', data)
     
-    if reCompileJSON:
+    if reCompileTwins:
         data['trainLogDir'] = trainLogDirBase+'170127_TWN_MOM_B'
         data['testLogDir'] = testLogDirBase+'170127_TWN_MOM_B'
         data['trainMaxSteps'] = 120000
@@ -281,7 +164,7 @@ def write_twin():
         data['weightNorm'] = False
         write_json_file('170127_TWN_MOM_B.json', data)
     
-    if reCompileJSON:
+    if reCompileTwins:
         data['trainLogDir'] = trainLogDirBase+'170128_TWN_MOM_B'
         data['testLogDir'] = testLogDirBase+'170128_TWN_MOM_B'
         data['trainMaxSteps'] = 90000
@@ -294,7 +177,7 @@ def write_twin():
         data['weightNorm'] = False
         write_json_file('170128_TWN_MOM_B.json', data)
         
-    if reCompileJSON:
+    if reCompileTwins:
         data['trainLogDir'] = trainLogDirBase+'170127_TWN_MOM_BW'
         data['testLogDir'] = testLogDirBase+'170127_TWN_MOM_BW'
         data['trainMaxSteps'] = 120000
@@ -307,7 +190,7 @@ def write_twin():
         data['weightNorm'] = True
         write_json_file('170127_TWN_MOM_BW.json', data)
     ##############
-    if reCompileJSON:
+    if reCompileTwins:
         data['trainLogDir'] = trainLogDirBase+'170118_AdamOpt_B16_256'
         data['testLogDir'] = testLogDirBase+'170118_AdamOpt_B16_256'
         data['trainMaxSteps'] = 90000
@@ -320,7 +203,7 @@ def write_twin():
         data['weightNorm'] = True
         write_json_file('170118_AdamOpt_B16_256.json', data)
     ###############
-    if reCompileJSON:
+    if reCompileTwins:
         data['trainLogDir'] = trainLogDirBase+'170118_MomentumOpt_B20_256'
         data['testLogDir'] = testLogDirBase+'170118_MomentumOpt_B20_256'
         data['trainMaxSteps'] = 90000
@@ -333,7 +216,7 @@ def write_twin():
         data['weightNorm'] = True
         write_json_file('170118_MomentumOpt_B20_256.json', data)
     ##############
-    if reCompileJSON:
+    if reCompileTwins:
         data['trainLogDir'] = trainLogDirBase+'170120_MomentumOpt_256_256'
         data['testLogDir'] = testLogDirBase+'170120_MomentumOpt_256_256'
         data['trainMaxSteps'] = 90000
@@ -346,7 +229,7 @@ def write_twin():
         data['weightNorm'] = True
         write_json_file('170120_MomentumOpt_256_256.json', data)
     
-    if reCompileJSON:
+    if reCompileTwins:
         data['trainLogDir'] = trainLogDirBase+'170120_MomentumOpt_256_256_150k'
         data['testLogDir'] = testLogDirBase+'170120_MomentumOpt_256_256_150k'
         data['trainMaxSteps'] = 150000
@@ -360,7 +243,7 @@ def write_twin():
         write_json_file('170120_MomentumOpt_256_256_150k.json', data)
         
     ############## 
-    if reCompileJSON:
+    if reCompileTwins:
         data['trainLogDir'] = trainLogDirBase+'170125_MomentumOpt_256_256_BNorm'
         data['testLogDir'] = testLogDirBase+'170125_MomentumOpt_256_256_BNorm'
         data['trainMaxSteps'] = 90000
@@ -373,7 +256,7 @@ def write_twin():
         data['weightNorm'] = False
         write_json_file('170125_MomentumOpt_256_256_BNorm.json', data)
     ##############
-    if reCompileJSON:
+    if reCompileTwins:
         data['trainLogDir'] = trainLogDirBase+'170125_MomentumOpt_256_256_WBNorm'
         data['testLogDir'] = testLogDirBase+'170125_MomentumOpt_256_256_WBNorm'
         data['trainMaxSteps'] = 90000
@@ -387,7 +270,7 @@ def write_twin():
         write_json_file('170125_MomentumOpt_256_256_WBNorm.json', data)
     
     ##############
-    if reCompileJSON:
+    if reCompileTwins:
         data['trainLogDir'] = trainLogDirBase+'170129_TWN_MOM_B_64'
         data['testLogDir'] = testLogDirBase+'170129_TWN_MOM_B_64'
         data['trainMaxSteps'] = 90000
@@ -402,7 +285,7 @@ def write_twin():
     
     
     ##############
-    if reCompileJSON:
+    if reCompileTwins:
         data['trainLogDir'] = trainLogDirBase+'170129_TWN_MOM_B_32'
         data['testLogDir'] = testLogDirBase+'170129_TWN_MOM_B_32'
         data['trainMaxSteps'] = 30000#90000
@@ -416,7 +299,7 @@ def write_twin():
         write_json_file('170129_TWN_MOM_B_32.json', data)
         
     ##############
-    if reCompileJSON:
+    if reCompileTwins:
         data['trainLogDir'] = trainLogDirBase+'170130_TWN_MOM_B_16'
         data['testLogDir'] = testLogDirBase+'170130_TWN_MOM_B_16'
         data['trainMaxSteps'] = 15000#90000
@@ -545,20 +428,22 @@ def write_iterative():
     # Iterative model only changes the wayoutput is written, 
     # so any model can be used by ease
 
+    reCompileITR = True
+    NOreCompileITR = False
     ##############
     ##############
     ##############
-    if reCompileJSON:
+    if reCompileITR:
         data['modelName'] = 'twin_cnn_4p4l2f'
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
-        runName = 'GPUY_170208_ITR_B_1'
+        runName = '170523_ITR_B_1'
         data['trainDataDir'] = '../Data/128_train_tfrecords'
         data['testDataDir'] = '../Data/128_test_tfrecords'
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -572,13 +457,13 @@ def write_iterative():
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
         ### ITERATION 2
-        runName = 'GPUY_170208_ITR_B_2'
+        runName = '170523_ITR_B_2'
         data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -592,13 +477,13 @@ def write_iterative():
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
         ### ITERATION 3
-        runName = 'GPUY_170208_ITR_B_3'
+        runName = '170523_ITR_B_3'
         data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -612,13 +497,13 @@ def write_iterative():
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
         ### ITERATION 4
-        runName = 'GPUY_170208_ITR_B_4'
+        runName = '170523_ITR_B_4'
         data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -631,12 +516,10 @@ def write_iterative():
         data['batchNorm'] = True
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
-
-
     ##############
     ##############
     ##############
-    if reCompileJSON:
+    if NOreCompileITR:
         data['modelName'] = 'twin_cnn_4p4l2f'
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
@@ -645,8 +528,8 @@ def write_iterative():
         data['testDataDir'] = '../Data/128_test_tfrecords_ob_16'
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -665,8 +548,8 @@ def write_iterative():
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -685,8 +568,8 @@ def write_iterative():
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -705,8 +588,8 @@ def write_iterative():
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -723,7 +606,7 @@ def write_iterative():
     ##############
     ##############
     ##############
-    if False:
+    if NOreCompileITR:
         data['modelName'] = 'twin_cnn_4p4l2f'
         data['optimizer'] = 'AdamOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
@@ -732,8 +615,8 @@ def write_iterative():
         data['testDataDir'] = '../Data/128_test_tfrecords'
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -752,8 +635,8 @@ def write_iterative():
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -772,8 +655,8 @@ def write_iterative():
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -792,8 +675,8 @@ def write_iterative():
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -809,7 +692,7 @@ def write_iterative():
 
 
     ##############
-    if False:
+    if NOreCompileITR:
         data['modelName'] = 'twin_cnn_4p4l2f'
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
@@ -818,8 +701,8 @@ def write_iterative():
         data['testDataDir'] = '../Data/128_test_tfrecords'
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -838,8 +721,8 @@ def write_iterative():
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase + runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -858,8 +741,8 @@ def write_iterative():
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -878,8 +761,8 @@ def write_iterative():
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -894,7 +777,7 @@ def write_iterative():
         write_json_file(runName+'.json', data)
 
     ##############
-    if False:
+    if NOreCompileITR:
         data['modelName'] = 'twin_cnn_res_4p4l2f'
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
@@ -903,8 +786,8 @@ def write_iterative():
         data['testDataDir'] = '../Data/128_test_tfrecords'
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -923,8 +806,8 @@ def write_iterative():
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -943,8 +826,8 @@ def write_iterative():
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -963,8 +846,8 @@ def write_iterative():
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -979,7 +862,7 @@ def write_iterative():
         write_json_file(runName+'.json', data)
         
     ##############
-    if False:
+    if NOreCompileITR:
         data['modelName'] = 'twin_cnn_goog_res_4p4l2f'
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
@@ -988,8 +871,8 @@ def write_iterative():
         data['testDataDir'] = '../Data/128_test_tfrecords'
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -1008,8 +891,8 @@ def write_iterative():
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -1028,8 +911,8 @@ def write_iterative():
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -1048,8 +931,8 @@ def write_iterative():
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -1064,7 +947,7 @@ def write_iterative():
         write_json_file(runName+'.json', data)
 
     ##############
-    if False:
+    if NOreCompileITR:
         data['modelName'] = 'twin_cnn_4p8l2f'
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
@@ -1073,8 +956,8 @@ def write_iterative():
         data['testDataDir'] = '../Data/128_test_tfrecords'
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
-        data['warpedTrainDataDir'] = warpedImageTrainBase + runName
-        data['warpedTestDataDir'] = warpedImageTestBase+ runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
@@ -1128,7 +1011,7 @@ def write_residual():
 ####################################################################################
 
 def recompile_json_files():
-    write_single()
+    #write_single()
     #write_twin()
     #write_twin_correlation()
     write_iterative()

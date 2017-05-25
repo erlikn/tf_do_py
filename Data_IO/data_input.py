@@ -20,7 +20,8 @@ import Data_IO.tfrecord_io as tfrecord_io
 TRAIN_SHARD_SIZE = 32*64
 TEST_SHARD_SIZE = 32*64
 #190 shard files with (2048 samples per shard)
-NUMBER_OF_SHARDS = (388864//TRAIN_SHARD_SIZE)+1 
+CHNAGE_TO_TOTAL_FILE_NUMBER = 24000
+NUMBER_OF_SHARDS = (CHNAGE_TO_TOTAL_FILE_NUMBER//TRAIN_SHARD_SIZE)+1 
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -71,11 +72,6 @@ tf.app.flags.DEFINE_integer('inputQueueMemoryFactor', 16,
                             """4, 2 or 1, if host memory is constrained. See """
                             """comments in code for more details.""")
 
-
-IMAGE_SIZE = 128
-IMAGE_CAHNNELS = 2
-
-
 def validate_for_nan(tensorT):
     # Input:
     #   Tensor
@@ -124,58 +120,49 @@ def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
       dataDir: Path to the DeepHomography data directory.
       batch_size: Number of images per batch.
     Returns:
-      images: Images. 4D tensor of [batch_size, IMAGE_SIZE, IMAGE_SIZE, 2] size.
-      labels: Labels. 3D tensor of [batch_size, 1, 8] size.
+      images: Images. 4D tensor of [batch_size, imageDepthRows, imageDepthCols, 2] size.
+      tmat: transformation matrix. 3D tensor of [batch_size, 1, 12=tMatRows*tMatCols] size.
+      pclA: Point Clouds. 3D tensor of [batch_size, pclRows, pclCols]
+      pclB: Point Clouds. 3D tensor of [batch_size, pclRows, pclCols]
+      tfRecfileID: 3 ints [seqID, frame i, frame i+1]
     """
     if not kwargs.get('dataDir'):
         raise ValueError('Please supply a dataDir')
-    
     dataDir = kwargs.get('dataDir')
-
     with tf.name_scope('batch_processing'):
-
         # get dataset filenames
         filenames = glob.glob(os.path.join(dataDir, "*.tfrecords"))
-        
         # read parameters
         ph = kwargs.get('phase')
         batchSize = kwargs.get('activeBatchSize')
-
-        if (filenames == None or len(filenames) == 0):
+        if filenames is None or len(filenames) == 0:
             raise ValueError("No filenames found for stage: %s" % ph)
-
         '''
         for f in filenames_orig:
             if not tf.gfile.Exists(f):
                 raise ValueError('Failed to find file: ' + f)
         '''
-       
         # create input queue
-        if ph=='train':
+        if ph == 'train':
             # Create a queue that produces the filenames to read.
             filenameQueue = tf.train.string_input_producer(filenames,
-                                                            shuffle=True,
-                                                            capacity=8)
+                                                           shuffle=True,
+                                                           capacity=8)
         else:
             filenameQueue = tf.train.string_input_producer(filenames,
-                                                            shuffle=False,
-                                                            capacity=8)
+                                                           shuffle=False,
+                                                           capacity=8)
         # set number of preprocessing threads
         if numPreprocessThreads is None:
             numPreprocessThreads = FLAGS.numPreprocessThreads
-
-        
         if numPreprocessThreads % 4:
             raise ValueError('Please make numPreprocessThreads a multiple '
                              'of 4 (%d % 4 != 0).', numPreprocessThreads)
-        
         # set number of readers
         if numReaders is None:
             numReaders = FLAGS.numReaders
-
         if numReaders < 1:
             raise ValueError('Please make numReaders at least 1')
-
         # Size the random shuffle queue to balance between good global
         # mixing (more examples) and memory use (fewer examples).
         # 1 sample (two 128x128 greyscale images) uses 128*128*2*4 bytes ~ 0.14MB
@@ -183,7 +170,6 @@ def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
         # 1 shard is about 32 batches = 2048 samples (287 MB/shard)
         # The default inputQueueMemoryFactor is 8 implying a shuffling queue
         # size of 16*287 MB ~ 4.6 GB
-        
         if kwargs.get('phase')=='train':
             # calculate number of examples per shard.
             examplesPerShard = FLAGS.trainShardSize
@@ -202,7 +188,6 @@ def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
                 capacity=minQueueExamples + 3 * batchSize,
                 min_after_dequeue=minQueueExamples,
                 dtypes=[tf.string])
-
         # read examples, put in the queue, and generate serialized examples
         if numReaders > 1:
             enqueue_ops = []
@@ -218,35 +203,21 @@ def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
             reader = tf.TFRecordReader()
             # generate serialized example
             _, exampleSerialized = reader.read(filenameQueue) 
-
         # Read data from queue
         imagesHomographiesOrigsqrs = []
         for _ in range(numPreprocessThreads):
             # Parse a serialized Example proto to extract the image and metadata.
-            imageOrig, imageBuffer, pOrig, HAB, tfrecFileIDs = tfrecord_io.parse_example_proto(exampleSerialized, **kwargs)
-            image = image_preprocessing(imageBuffer, **kwargs) # normalized between [-1,1]
-            imagesHomographiesOrigsqrs.append([imageOrig, image, pOrig, HAB, tfrecFileIDs])
-
-        batchImageOrig, batchImage, batchPOrig, batchHAB, batchTFrecFileIDs = tf.train.batch_join(imagesHomographiesOrigsqrs,
+            images, pclA, pclB, tMat, tfrecFileIDs = tfrecord_io.parse_example_proto(exampleSerialized, **kwargs)
+            sampleData.append([images, pclA, pclB, tMat, tfrecFileIDs])
+        batchImages, batchPclA, batchPclB, batchTMat, batchTFrecFileIDs = tf.train.batch_join(sampleData,
                                                                 batch_size=kwargs.get('activeBatchSize'),
                                                                 capacity=2 * numPreprocessThreads * batchSize)
-
         batchImage = tf.cast(batchImage, tf.float32)
-
         # Display the training images in the visualizer.
-
-        image0, image1 = tf.split(batchImage, [1, 1], axis=3)
-        #image0 = tf.reshape(images[0], [batchSize, 128, 128, 1])
-        #image1 = tf.reshape(images[1], [batchSize, 128, 128, 1])
-
-        tf.summary.image('imagesOrig', image0)
-        tf.summary.image('imagesPert', image1)
-
-        return batchImageOrig, batchImage, batchPOrig, batchHAB, batchTFrecFileIDs
-
-        # Read examples from files in the filename queue.
-        #read_input = read_calusa_heatmap(filenameQueue)
-        #reshaped_image = tf.cast(read_input.uint8image, tf.float32)
+        imageA, imageB = tf.split(batchImage, [1, 1], axis=3)
+        tf.summary.image('imagesA', imageA)
+        tf.summary.image('imagesB', imageB)
+        return batchImages, batchPclA, batchPclB, batchTMat, batchTFrecFileIDs
 
 def inputs(**kwargs):
     """Construct input for DeepHomography_CNN evaluation using the Reader ops.
@@ -256,16 +227,16 @@ def inputs(**kwargs):
     Returns:
       batchImage: Images. 4D tensor of [batch_size, 128, 512, 2] size.
       batchHAB: 2D tensor of [batch_size, 12] size.
-      batchPCL: 2D tensor of [batch_size, n] size.
-    
+      batchPCL: 2x 2D tensor of [batch_size, pclCols] size.
+      tfrec: 3x int
     Raises:
       ValueError: If no dataDir
     """
     with tf.device('/cpu:0'):
-        batchImageOrig, batchImage, batchPOrig, batchHAB, tfrecFileID = fetch_inputs(**kwargs)
+        batchImages, batchPclA, batchPclB, batchTMatT, batchTFrecFileIDs = fetch_inputs(**kwargs)
         
         if kwargs.get('usefp16'):
             batchImage = tf.cast(batchImage, tf.float16)
             batchHAB = tf.cast(batchHAB, tf.float16)
 
-    return batchImageOrig, batchImage, batchPOrig, batchHAB, tfrecFileID
+    return batchImages, batchPclA, batchPclB, batchPOrig, batchTMatT, batchTFrecFileIDs

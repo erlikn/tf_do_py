@@ -31,7 +31,7 @@ PHASE = 'train'
 # import json_maker, update json files and read requested json file
 import Model_Settings.json_maker as json_maker
 json_maker.recompile_json_files()
-jsonToRead = '170301_ITR_B_Res_1.json'
+jsonToRead = '170523_ITR_B_1.json'
 print("Reading %s" % jsonToRead)
 with open('Model_Settings/'+jsonToRead) as data_file:
     modelParams = json.load(data_file)
@@ -80,26 +80,11 @@ def train():
     _get_control_params()
 
     if not os.path.exists(modelParams['dataDir']):
-        raise ValueError("No such data directory %s" % modelParams['dataDir'])    
-
-    #meanImgFi1000le = os.path.join(FLAGS.dataDir, "meta")
-    #if not os.path.isfile(meanImgFile):
-    #    raise ValueError("Warning, no meta file found at %s" % meanImgFile)
-    #else:
-    #    with open(meanImgFile, "r") as inMeanFile:
-    #        meanInfo = json.load(inMeanFile)
-    #
-    #    meanImg = meanInfo['mean']
-    #
-    #    # also load the target output sizes
-    #    params['targSz'] = meanInfo["targSz"]
+        raise ValueError("No such data directory %s" % modelParams['dataDir'])
 
     _setupLogging(os.path.join(modelParams['trainLogDir'], "genlog"))
 
     with tf.Graph().as_default():
-        # BGR to RGB
-        #params['meanImg'] = tf.constant(meanImg, dtype=tf.float32)
-
         # track the number of train calls (basically number of batches processed)
         globalStep = tf.get_variable('globalStep',
                                      [],
@@ -107,15 +92,12 @@ def train():
                                      trainable=False)
 
         # Get images and transformation for model_cnn.
-        imagesOrig, images, pOrig, tHAB, tfrecFileIDs = data_input.inputs(**modelParams)
-
+        images, pclA, pclB, tMatT, tfrecFileIDs = data_input.inputs(**modelParams)
         # Build a Graph that computes the HAB predictions from the
         # inference model.
-        pHAB = model_cnn.inference(images, **modelParams)
-
+        tMatP = model_cnn.inference(images, **modelParams)
         # Calculate loss.
-        loss = model_cnn.loss(pHAB, tHAB, **modelParams)
-
+        loss = model_cnn.loss(tMatP, tMatT, **modelParams)
         # Build a Graph that trains the model with one batch of examples and
         # updates the model parameters.
         opTrain = model_cnn.train(loss, globalStep, **modelParams)
@@ -135,7 +117,7 @@ def train():
         # Start running operations on the Graph.
         config = tf.ConfigProto(log_device_placement=modelParams['logDevicePlacement'])
         config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
-        sess = tf.Session(config = config)
+        sess = tf.Session(config=config)
         
         #sess = tf_debug.LocalCLIDebugWrapperSession(sess)
         #sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
@@ -146,13 +128,12 @@ def train():
 
         summaryWriter = tf.summary.FileWriter(modelParams['trainLogDir'], sess.graph)
 
-        HABperPixelsum = 0
         durationSum = 0
         for step in xrange(modelParams['maxSteps']):
             startTime = time.time()
             _, lossValue = sess.run([opTrain, loss])
             duration = time.time() - startTime
-            durationSum += duration 
+            durationSum += duration
             assert not np.isnan(lossValue), 'Model diverged with loss = NaN'
 
             if step % FLAGS.printOutStep == 0:
@@ -172,7 +153,7 @@ def train():
             if step % FLAGS.modelCheckpointStep == 0 or (step + 1) == modelParams['maxSteps']:
                 checkpointPath = os.path.join(modelParams['trainLogDir'], 'model.ckpt')
                 saver.save(sess, checkpointPath, global_step=step)
-            
+
             # Print Progress Info
             if ((step % FLAGS.ProgressStepReportStep) == 0) or ((step+1) == modelParams['maxSteps']):
                 print('Progress: %.2f%%, Elapsed: %.2f mins, Training Completion in: %.2f mins' %
@@ -185,24 +166,16 @@ def train():
             print('Warping images with batch size %d in %d steps' % (modelParams['activeBatchSize'], stepsForOneDataRound))
             for step in xrange(stepsForOneDataRound):
                 startTime = time.time()
-                evImagesOrig, evImages, evPOrig, evtHAB, evpHAB, evtfrecFileIDs, evlossValue = sess.run([imagesOrig, images, pOrig, tHAB, pHAB, tfrecFileIDs, loss])
+                evImages, evPclA, evPclB, evtMatT, evtMatP, evtfrecFileIDs, evlossValue = sess.run([images, pclA, pclB, tMatT, tMatP, tfrecFileIDs, loss])
                 duration = time.time() - startTime
                 durationSum += duration
-                HABRES = evtHAB-evpHAB
-                HABperPixel = 0
-                for i in xrange(modelParams['activeBatchSize']):
-                    H = np.asarray([[HABRES[i][0],HABRES[i][1],HABRES[i][2],HABRES[i][3]],
-                                    [HABRES[i][4],HABRES[i][5],HABRES[i][6],HABRES[i][7]]], np.float32)
-                    HABperPixel += np.sqrt((H*H).sum(axis=0)).mean()
-                HABperPixel = HABperPixel/modelParams['activeBatchSize']
-                HABperPixelsum += HABperPixel
                 #### put imageA, warpped imageB by pHAB, HAB-pHAB as new HAB, changed fileaddress tfrecFileIDs
-                data_output.output(evImagesOrig, evImages, evPOrig, evtHAB, evpHAB, evtfrecFileIDs, **modelParams)
+                data_output.output(evImages, evPclA, evPclB, evtMatT, evtMatP, evtfrecFileIDs, **modelParams)
                 # Print Progress Info
                 if ((step % FLAGS.ProgressStepReportStep) == 0) or ((step+1) == stepsForOneDataRound):
                     print('Progress: %.2f%%, Loss: %.2f, Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
-                            ((100*step)/stepsForOneDataRound, HABperPixelsum/(step+1), durationSum/60, (((durationSum*stepsForOneDataRound)/(step+1))/60)-(durationSum/60) ) )
-            print('Average training loss = %.2f - Average time per sample= %.2f s, Steps = %d' % (HABperPixelsum/step, durationSum/(step*modelParams['activeBatchSize']), step))
+                            ((100*step)/stepsForOneDataRound, evlossValue/(step+1), durationSum/60, (((durationSum*stepsForOneDataRound)/(step+1))/60)-(durationSum/60) ) )
+            print('Average training loss = %.2f - Average time per sample= %.2f s, Steps = %d' % (evlossValue/modelParams['activeBatchSize'], durationSum/(step*modelParams['activeBatchSize']), step))
 
 
 def _setupLogging(logPath):
