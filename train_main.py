@@ -59,8 +59,6 @@ def _get_control_params():
     #params['shardMeta'] = model_cnn.getShardsMetaInfo(FLAGS.dataDir, params['phase'])
 
     modelParams['existingParams'] = None
-    if modelParams['initExistingWeights'] is not None and modelParams['initExistingWeights'] != "":
-        modelParams['existingParams'] = np.load(modelParams['initExistingWeights']).item()
 
     if modelParams['phase'] == 'train':
         modelParams['activeBatchSize'] = modelParams['trainBatchSize']
