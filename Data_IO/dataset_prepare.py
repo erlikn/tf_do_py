@@ -168,7 +168,7 @@ def _make_image(depthview, rXYZ):
     ##### Project to image coordinates using histograms
     ### Add maximas and minimas. Remove after histograms ----
     depthview, rXYZ = _add_corner_points(depthview, rXYZ)
-    # Normalize to 0~1    
+    # Normalize to 0~1
     depthview[0] = (depthview[0] - np.min(depthview[0]))/(np.max(depthview[0]) - np.min(depthview[0]))
     depthview[1] = (depthview[1] - np.min(depthview[1]))/(np.max(depthview[1]) - np.min(depthview[1]))
     # there roughly should be 64 height bins group them in 64 clusters
@@ -189,15 +189,15 @@ def _make_image(depthview, rXYZ):
     ### Remove maximas and minimas. -------------------------
     depthview = _remove_corner_points(depthview)
     # sorts ascending
-    idxs = np.argsort(depthview[2], kind = 'mergesort')
+    idxs = np.argsort(depthview[2], kind='mergesort')
     # assign range to pixels
-    for i in range(depthview.shape[1]-1,-1,-1): # traverse descending
-        yidx = np.argmin(np.abs(yCent-depthview[1,i]))
-        xidx = np.argmin(np.abs(xCent-depthview[0,i]))
+    for i in range(depthview.shape[1]-1, -1, -1): # traverse descending
+        yidx = np.argmin(np.abs(yCent-depthview[1, idxs[i]]))
+        xidx = np.argmin(np.abs(xCent-depthview[0, idxs[i]]))
         # hieght is 2x64
-        yidx=yidx*2
-        depthImage[yidx, xidx] = depthview[2,i]
-        depthImage[yidx+1, xidx] = depthview[2,i]
+        yidx = yidx*2
+        depthImage[yidx, xidx] = depthview[2, idxs[i]]
+        depthImage[yidx+1, xidx] = depthview[2, idxs[i]]
     return depthImage
 def get_depth_image_pano_pclView(xyzi, height=1.6):
     '''
@@ -317,10 +317,10 @@ def process_dataset(startTime, durationSum, pclFolder, seqID, pclFilenames, pose
     #
     fileID = [int(seqID), i, i+1]
     odometery_writer(fileID,# 3 ints
-                   xyzi_A, xyzi_B,# 3xPCL_COLS
-                   imgDepth_A, imgDepth_B,# 128x512
-                   pose_AB,# 3x4
-                   tfRecFolder)
+                     xyzi_A, xyzi_B,# 3xPCL_COLS
+                     imgDepth_A, imgDepth_B,# 128x512
+                     pose_AB,# 3x4
+                     tfRecFolder)
 
 ################################
 def _get_pose_data(posePath):
@@ -346,10 +346,9 @@ def prepare_dataset(datasetType, pclFolder, poseFolder, seqIDs, tfRecFolder):
         pclFilenames = _get_file_names(pclFolderPath)
         startTime = time.time()
         num_cores = multiprocessing.cpu_count()
-        count = 0
-        for j in range(0,len(pclFilenames)-1):
-            process_dataset(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j)
-        #Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j) for j in range(0,len(pclFilenames)-1))
+        #for j in range(0,len(pclFilenames)-1):
+        #    process_dataset(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j)
+        Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j) for j in range(0,len(pclFilenames)-1))
     print('Done')
 
 ################################

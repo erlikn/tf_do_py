@@ -97,6 +97,11 @@ def train():
         # inference model.
         tMatP = model_cnn.inference(images, **modelParams)
         # Calculate loss.
+        # use mask to get degrees significant
+        mask = np.array([[100, 100, 100, 1, 100, 100, 100, 1, 100, 100, 100, 1]], dtype=np.float32)
+        mask = np.repeat(mask, modelParams['activeBatchSize'], axis=0)
+        tMatP = tf.multiply(mask, tMatP)
+        tMatT = tf.multiply(mask, tMatT)
         loss = model_cnn.loss(tMatP, tMatT, **modelParams)
         # Build a Graph that trains the model with one batch of examples and
         # updates the model parameters.
@@ -118,7 +123,7 @@ def train():
         config = tf.ConfigProto(log_device_placement=modelParams['logDevicePlacement'])
         config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
         sess = tf.Session(config=config)
-        
+
         #sess = tf_debug.LocalCLIDebugWrapperSession(sess)
         #sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
         sess.run(init)
