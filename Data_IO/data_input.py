@@ -172,7 +172,7 @@ def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
             # generate serialized example
             _, exampleSerialized = reader.read(filenameQueue) 
         # Read data from queue
-        imagesHomographiesOrigsqrs = []
+        sampleData = []
         for _ in range(numPreprocessThreads):
             # Parse a serialized Example proto to extract the image and metadata.
             images, pclA, pclB, tMat, tfrecFileIDs = tfrecord_io.parse_example_proto(exampleSerialized, **kwargs)
@@ -180,9 +180,9 @@ def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
         batchImages, batchPclA, batchPclB, batchTMat, batchTFrecFileIDs = tf.train.batch_join(sampleData,
                                                                 batch_size=kwargs.get('activeBatchSize'),
                                                                 capacity=2 * numPreprocessThreads * batchSize)
-        batchImage = tf.cast(batchImage, tf.float32)
+        batchImages = tf.cast(batchImages, tf.float32)
         # Display the training images in the visualizer.
-        imageA, imageB = tf.split(batchImage, [1, 1], axis=3)
+        imageA, imageB = tf.split(batchImages, [1, 1], axis=3)
         tf.summary.image('imagesA', imageA)
         tf.summary.image('imagesB', imageB)
         return batchImages, batchPclA, batchPclB, batchTMat, batchTFrecFileIDs
@@ -204,7 +204,9 @@ def inputs(**kwargs):
         batchImages, batchPclA, batchPclB, batchTMatT, batchTFrecFileIDs = fetch_inputs(**kwargs)
         
         if kwargs.get('usefp16'):
-            batchImage = tf.cast(batchImage, tf.float16)
-            batchHAB = tf.cast(batchHAB, tf.float16)
+            batchImages = tf.cast(batchImages, tf.float16)
+            batchPclA = tf.cast(batchPclA, tf.float16)
+            batchPclB = tf.cast(batchPclB, tf.float16)
+            batchTMatT = tf.cast(batchTMatT, tf.float16)
 
-    return batchImages, batchPclA, batchPclB, batchPOrig, batchTMatT, batchTFrecFileIDs
+    return batchImages, batchPclA, batchPclB, batchTMatT, batchTFrecFileIDs

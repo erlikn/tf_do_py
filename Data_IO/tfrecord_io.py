@@ -54,7 +54,7 @@ def _get_pcl(pcl, rows, cols):
     """
     Decode and put point cloud in the right form. nx4
     """
-    pcl = tf.decode_raw(pcl, tf.float32)
+    #pcl = tf.decode_raw(pcl, tf.float32)
     pcl = tf.reshape(pcl, [rows, cols])
     pcl.set_shape([rows, cols])
     return pcl
@@ -90,8 +90,8 @@ def parse_example_proto(exampleSerialized, **kwargs):
     featureMap = {
         'fileID': tf.FixedLenFeature([3], dtype=tf.int64),
         'images': tf.FixedLenFeature([], dtype=tf.string),
-        'pclA': tf.FixedLenFeature([], dtype=tf.float32),
-        'pclB': tf.FixedLenFeature([], dtype=tf.float32),
+        'pclA': tf.FixedLenFeature([kwargs.get('pclRows')*kwargs.get('pclCols')], dtype=tf.float32),
+        'pclB': tf.FixedLenFeature([kwargs.get('pclRows')*kwargs.get('pclCols')], dtype=tf.float32),
         'tMatTarget': tf.FixedLenFeature([12], dtype=tf.float32)
         }
 

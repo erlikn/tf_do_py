@@ -55,7 +55,7 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
     batchSize = kwargs.get('activeBatchSize', None)
 
     ############# CONV1_TWIN 3x3 conv, 2 input dims, 2 parallel modules, 64 output dims (filters)
-    fireOut, prevExpandDim = model_base.conv_fire_parallel_module('conv1', images, kwargs.get('imageChannels'),
+    fireOut, prevExpandDim = model_base.conv_fire_parallel_module('conv1', images, kwargs.get('imageDepthChannels'),
                                                                   {'cnn3x3': modelShape[0]},
                                                                   wd, **kwargs)
     # calc batch norm CONV1_TWIN
@@ -125,7 +125,7 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
         #fireOut = tf.nn.dropout(fireOut, keepProb, name="dropout")
     ###### Prepare for fully connected layers
     # Reshape firout - flatten
-    prevExpandDim = (kwargs.get('imageHeight')//(2*2*2))*(kwargs.get('imageWidth')//(2*2*2))*prevExpandDim
+    prevExpandDim = (kwargs.get('imageDepthRows')//(2*2*2))*(kwargs.get('imageDepthCols')//(2*2*2))*prevExpandDim
     fireOutFlat = tf.reshape(fireOut, [batchSize, -1])
 
     ############# FC1 layer with 1024 outputs
