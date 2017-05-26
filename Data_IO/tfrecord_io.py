@@ -94,15 +94,7 @@ def parse_example_proto(exampleSerialized, **kwargs):
         'pclB': tf.FixedLenFeature([kwargs.get('pclRows')*kwargs.get('pclCols')], dtype=tf.float32),
         'tMatTarget': tf.FixedLenFeature([12], dtype=tf.float32)
         }
-
     features = tf.parse_single_example(exampleSerialized, featureMap)
-
-    print(features['fileID'].get_shape())
-    print(features['images'].get_shape())
-    print(features['pclA'].get_shape())
-    print(features['pclB'].get_shape())
-    print(features['tMatTarget'].get_shape())
-
     fileID = features['fileID']
     images = _decode_byte_image(features['images'],
                                 kwargs.get('imageDepthRows'),

@@ -108,8 +108,8 @@ data = {
     'clipNorm' : 1.0,
     'lossFunction' : 'L2',
     # Train Parameters
-    'trainBatchSize' : 64,
-    'testBatchSize' : 64,
+    'trainBatchSize' : 1,
+    'testBatchSize' : 1,
     'outputSize' : 12, # 3x4 = tMatRows x tMatCols
     'trainMaxSteps' : 30000,
     'testMaxSteps' : 1,
@@ -447,11 +447,6 @@ def write_iterative():
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
         data['warpOriginalImage'] = True
-        data['trainMaxSteps'] = 90000
-        data['numEpochsPerDecay'] = 30000.0
-        data['trainBatchSize'] = 64
-        data['testBatchSize'] = 64
-        data['testMaxSteps'] = int(np.ceil(data['numTestDatasetExamples']/data['testBatchSize']))
         data['modelShape'] = [64, 64, 64, 64, 128, 128, 128, 128, 1024]
         data['batchNorm'] = True
         data['weightNorm'] = False
@@ -466,12 +461,6 @@ def write_iterative():
         data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
-        data['warpOriginalImage'] = True
-        data['trainMaxSteps'] = 90000
-        data['numEpochsPerDecay'] = 30000.0
-        data['trainBatchSize'] = 64
-        data['testBatchSize'] = 64
-        data['testMaxSteps'] = int(np.ceil(data['numTestDatasetExamples']/data['testBatchSize']))
         data['modelShape'] = [64, 64, 64, 64, 128, 128, 128, 128, 1024]
         data['batchNorm'] = True
         data['weightNorm'] = False
@@ -486,12 +475,6 @@ def write_iterative():
         data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
-        data['warpOriginalImage'] = True
-        data['trainMaxSteps'] = 90000
-        data['numEpochsPerDecay'] = 30000.0
-        data['trainBatchSize'] = 64
-        data['testBatchSize'] = 64
-        data['testMaxSteps'] = int(np.ceil(data['numTestDatasetExamples']/data['testBatchSize']))
         data['modelShape'] = [64, 64, 64, 64, 128, 128, 128, 128, 1024]
         data['batchNorm'] = True
         data['weightNorm'] = False
@@ -506,12 +489,6 @@ def write_iterative():
         data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
-        data['warpOriginalImage'] = True
-        data['trainMaxSteps'] = 90000
-        data['numEpochsPerDecay'] = 30000.0
-        data['trainBatchSize'] = 64
-        data['testBatchSize'] = 64
-        data['testMaxSteps'] = int(np.ceil(data['numTestDatasetExamples']/data['testBatchSize']))
         data['modelShape'] = [64, 64, 64, 64, 128, 128, 128, 128, 1024]
         data['batchNorm'] = True
         data['weightNorm'] = False
