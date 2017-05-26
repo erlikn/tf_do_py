@@ -20,10 +20,10 @@ def _set_folders(folderPath):
 ####################################################################################
 ####################################################################################
 # Twin Common Parameters
-trainLogDirBase = '../Data/128_logs/tfdh_twin_py_logs/train_logs/'
-testLogDirBase = '../Data/128_logs/tfdh_twin_py_logs/test_logs/'
-warpedTrainDirBase = '../Data/128_train_tfrecords_iterative/'
-warpedTestDirBase = '../Data/128_test_tfrecords_iterative/'
+trainLogDirBase = '../Data/kitti/logs/tfdh_twin_py_logs/train_logs/'
+testLogDirBase = '../Data/kitti/logs/tfdh_twin_py_logs/test_logs/'
+warpedTrainDirBase = '../Data/kitti/train_tfrecords_iterative/'
+warpedTestDirBase = '../Data/kitti/test_tfrecords_iterative/'
 ####################################################################################
 # Data Parameters
 numTrainDatasetExamples_desc = "Number of images to process in train dataset"
@@ -74,8 +74,8 @@ data = {
     # Data Parameters
     'numTrainDatasetExamples' : 20400,
     'numTestDatasetExamples' : 2790,
-    'trainDataDir' : '../Data/kitti/128_train_tfrecords',
-    'testDataDir' : '../Data/kitti/128_test_tfrecords',
+    'trainDataDir' : '../Data/kitti/train_tfrecords',
+    'testDataDir' : '../Data/kitti/test_tfrecords',
     'warpedTrainDataDir' : warpedTrainDirBase+'',
     'warpedTestDataDir' : warpedTestDirBase+'',
     'trainLogDir' : trainLogDirBase+'',
@@ -129,10 +129,10 @@ def write_twin():
     reCompileTwins = True
     NOrecompileTwins = False
     # Twin Common Parameters
-    trainLogDirBase = '../Data/128_logs/tfdh_twin_py_logs/train_logs/'
-    testLogDirBase = '../Data/128_logs/tfdh_twin_py_logs/test_logs/'
-    trainDataDir = '../Data/128_train_tfrecords'
-    testDataDir = '../Data/128_test_tfrecords'
+    trainLogDirBase = '../Data/kitti/logs/tfdh_twin_py_logs/train_logs/'
+    testLogDirBase = '../Data/kitti/logs/tfdh_twin_py_logs/test_logs/'
+    trainDataDir = '../Data/kitti/train_tfrecords'
+    testDataDir = '../Data/kitti/test_tfrecords'
 
     data['modelName'] = 'twin_cnn_4p4l2f'
 
@@ -165,8 +165,8 @@ def write_twin():
         write_json_file('170127_TWN_MOM_B.json', data)
     
     if reCompileTwins:
-        data['trainLogDir'] = trainLogDirBase+'170128_TWN_MOM_B'
-        data['testLogDir'] = testLogDirBase+'170128_TWN_MOM_B'
+        data['trainLogDir'] = trainLogDirBase+'170TWN_MOM_B'
+        data['testLogDir'] = testLogDirBase+'170TWN_MOM_B'
         data['trainMaxSteps'] = 90000
         data['numEpochsPerDecay'] = 30000.0
         data['trainBatchSize'] = 20
@@ -175,7 +175,7 @@ def write_twin():
         data['modelShape'] = [64, 64, 64, 64, 128, 128, 128, 128, 2048]
         data['batchNorm'] = True
         data['weightNorm'] = False
-        write_json_file('170128_TWN_MOM_B.json', data)
+        write_json_file('170TWN_MOM_B.json', data)
         
     if reCompileTwins:
         data['trainLogDir'] = trainLogDirBase+'170127_TWN_MOM_BW'
@@ -323,10 +323,10 @@ def write_twin():
 
 def write_single():
     # Single Common Parameters
-    trainLogDirBase = '../Data/128_logs/tfdh_py_logs/train_logs/'
-    testLogDirBase = '../Data/128_logs/tfdh_py_logs/test_logs/'
-    data['trainDataDir'] = '../Data/128_train_tfrecords'
-    data['testDataDir'] = '../Data/128_test_tfrecords'
+    trainLogDirBase = '../Data/kitti/logs/tfdh_py_logs/train_logs/'
+    testLogDirBase = '../Data/kitti/logs/tfdh_py_logs/test_logs/'
+    data['trainDataDir'] = '../Data/kitti/train_tfrecords'
+    data['testDataDir'] = '../Data/kitti/test_tfrecords'
 
     data['modelName'] = 'cnn_8l2f'
 
@@ -386,10 +386,10 @@ def write_single():
 
 def write_twin_correlation():
     # Twin Correlation Matching Common Parameters
-    trainLogDirBase = '../Data/128_logs/tfdh_twincorr_logs/train_logs/'
-    testLogDirBase = '../Data/128_logs/tfdh_twincorr_logs/test_logs/'
-    trainDataDir = '../Data/128_train_tfrecords'
-    testDataDir = '../Data/128_test_tfrecords'
+    trainLogDirBase = '../Data/kitti/logs/tfdh_twincorr_logs/train_logs/'
+    testLogDirBase = '../Data/kitti/logs/tfdh_twincorr_logs/test_logs/'
+    trainDataDir = '../Data/kitti/train_tfrecords'
+    testDataDir = '../Data/kitti/test_tfrecords'
 
     data['modelName'] = 'twin_cnn_4pCorr4l2f'
 
@@ -420,8 +420,8 @@ def write_twin_correlation():
 
 def write_iterative():
     # Twin Correlation Matching Common Parameters
-    trainLogDirBase = '../Data/128_logs/tfdh_iterative_logs/train_logs/'
-    testLogDirBase = '../Data/128_logs/tfdh_iterative_logs/test_logs/'
+    trainLogDirBase = '../Data/kitti/logs/tfdh_iterative_logs/train_logs/'
+    testLogDirBase = '../Data/kitti/logs/tfdh_iterative_logs/test_logs/'
 
     data['writeWarpedImages'] = True
 
@@ -438,8 +438,8 @@ def write_iterative():
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
         runName = '170523_ITR_B_1'
-        data['trainDataDir'] = '../Data/128_train_tfrecords'
-        data['testDataDir'] = '../Data/128_test_tfrecords'
+        data['trainDataDir'] = '../Data/kitti/train_tfrecords'
+        data['testDataDir'] = '../Data/kitti/test_tfrecords'
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
         data['warpedTrainDataDir'] = warpedTrainDirBase + runName
@@ -524,8 +524,8 @@ def write_iterative():
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
         runName = 'GPUX_170301_ITR_B_1'
-        data['trainDataDir'] = '../Data/128_train_tfrecords'
-        data['testDataDir'] = '../Data/128_test_tfrecords_ob_16'
+        data['trainDataDir'] = '../Data/kitti/train_tfrecords'
+        data['testDataDir'] = '../Data/kitti/test_tfrecords_ob_16'
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
         data['warpedTrainDataDir'] = warpedTrainDirBase + runName
@@ -611,8 +611,8 @@ def write_iterative():
         data['optimizer'] = 'AdamOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
         runName = '170301_ITR_B_ADAM_1'
-        data['trainDataDir'] = '../Data/128_train_tfrecords'
-        data['testDataDir'] = '../Data/128_test_tfrecords'
+        data['trainDataDir'] = '../Data/kitti/train_tfrecords'
+        data['testDataDir'] = '../Data/kitti/test_tfrecords'
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
         data['warpedTrainDataDir'] = warpedTrainDirBase + runName
@@ -697,8 +697,8 @@ def write_iterative():
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
         runName = '170301_ITR_B_512_1'
-        data['trainDataDir'] = '../Data/128_train_tfrecords'
-        data['testDataDir'] = '../Data/128_test_tfrecords'
+        data['trainDataDir'] = '../Data/kitti/train_tfrecords'
+        data['testDataDir'] = '../Data/kitti/test_tfrecords'
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
         data['warpedTrainDataDir'] = warpedTrainDirBase + runName
@@ -782,8 +782,8 @@ def write_iterative():
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
         runName = '170301_ITR_B_Res_1'
-        data['trainDataDir'] = '../Data/128_train_tfrecords'
-        data['testDataDir'] = '../Data/128_test_tfrecords'
+        data['trainDataDir'] = '../Data/kitti/train_tfrecords'
+        data['testDataDir'] = '../Data/kitti/test_tfrecords'
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
         data['warpedTrainDataDir'] = warpedTrainDirBase + runName
@@ -867,8 +867,8 @@ def write_iterative():
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
         runName = '170301_ITR_B_GooGRes_1'
-        data['trainDataDir'] = '../Data/128_train_tfrecords'
-        data['testDataDir'] = '../Data/128_test_tfrecords'
+        data['trainDataDir'] = '../Data/kitti/train_tfrecords'
+        data['testDataDir'] = '../Data/kitti/test_tfrecords'
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
         data['warpedTrainDataDir'] = warpedTrainDirBase + runName
@@ -952,8 +952,8 @@ def write_iterative():
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
         runName = '170311_ITR_B_12L_1'
-        data['trainDataDir'] = '../Data/128_train_tfrecords'
-        data['testDataDir'] = '../Data/128_test_tfrecords'
+        data['trainDataDir'] = '../Data/kitti/train_tfrecords'
+        data['testDataDir'] = '../Data/kitti/test_tfrecords'
         data['trainLogDir'] = trainLogDirBase + runName
         data['testLogDir'] = testLogDirBase + runName
         data['warpedTrainDataDir'] = warpedTrainDirBase + runName
@@ -981,8 +981,8 @@ def write_iterative():
 
 def write_residual():
     # Twin Correlation Matching Common Parameters
-    trainLogDirBase = '../Data/128_logs/tfdh_residual_logs/train_logs/'
-    testLogDirBase = '../Data/128_logs/tfdh_residual_logs/test_logs/'
+    trainLogDirBase = '../Data/kitti/logs/tfdh_residual_logs/train_logs/'
+    testLogDirBase = '../Data/kitti/logs/tfdh_residual_logs/test_logs/'
 
     data['modelName'] = 'twin_cnn_res_4p4l2f'
 
