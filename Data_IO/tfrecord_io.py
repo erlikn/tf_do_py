@@ -54,7 +54,8 @@ def _get_pcl(pcl):
     """
     Decode and put point cloud in the right form. nx4
     """
-    pcl = tf.reshape(features['pclA'], [-1, 4])
+    pcl = tf.decode_raw(features['pclA'], tf.float32)
+    pcl = tf.reshape(pcl, [-1, 4])
     #pcl.set_shape([-1, 4])
     return pcl
 

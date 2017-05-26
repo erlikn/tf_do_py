@@ -82,38 +82,6 @@ def validate_for_nan(tensorT):
     validity = tf.select(tf.is_nan(tensorMean), 0, 1) * tf.select(tf.is_inf(tensorMean), 0, 1)
     return validity
 
-
-def image_preprocessing(image, **kwargs):
-    """Decode and preprocess one image for evaluation or training.
-    Args:
-      imageBuffer: 3D tf.float32 Tensor (height, width, channels)
-    Returns:
-      3-D float Tensor containing an appropriately scaled image
-    """
-    meanChannels, stdChannels = tf.nn.moments(image, axes=[0, 1]) # 128x128x2 => [meanChannel1 meanChannel2]
-    # SUBTRACT MEAN
-    meanChannels = tf.reshape(meanChannels, [1,1,-1]) # prepare for channel based subtraction
-    imagenorm = tf.subtract(image, meanChannels)
-    # DIVIDE BY STANDARD DEVIATION
-    stdChannels = tf.reshape(stdChannels, [1,1,-1]) # prepare for channel based scalar division
-    stdChannels = tf.cond(tf.reduce_all(tf.not_equal(stdChannels,tf.zeros_like(stdChannels))),
-                          lambda: stdChannels,
-                          lambda: tf.ones_like(stdChannels))
-    imagenorm = tf.div(imagenorm, stdChannels)
-    # SCALE TO [-1,1]
-    maxChannels = tf.reduce_max(imagenorm, [0,1])
-    minChannels = tf.reduce_min(imagenorm, [0,1])
-    maxminDif = tf.subtract(maxChannels, minChannels)
-    maxminSum = tf.add(maxChannels, minChannels)
-    maxminDif = tf.reshape(maxminDif, [1,1,-1])
-    maxminSum = tf.reshape(maxminSum, [1,1,-1])
-    coef = tf.constant(2.0, shape=[1,1,2])
-    maxminDif = tf.cond(tf.reduce_all(tf.not_equal(maxminDif,tf.zeros_like(maxminDif))),
-                                      lambda: maxminDif, 
-                                      lambda: tf.ones_like(maxminDif))
-    imagenorm = tf.div(tf.subtract(tf.multiply(coef,imagenorm), maxminSum), maxminDif) # ((2*x)-(max+min))/(max-min)
-    return imagenorm
-
 def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
     """Construct input for DeepHomography using the Reader ops.
     Args:
@@ -170,7 +138,7 @@ def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
         # 1 shard is about 32 batches = 2048 samples (287 MB/shard)
         # The default inputQueueMemoryFactor is 8 implying a shuffling queue
         # size of 16*287 MB ~ 4.6 GB
-        if kwargs.get('phase')=='train':
+        if kwargs.get('phase') == 'train':
             # calculate number of examples per shard.
             examplesPerShard = FLAGS.trainShardSize
             minQueueExamples = examplesPerShard * FLAGS.inputQueueMemoryFactor
