@@ -50,13 +50,13 @@ def _decode_byte_image(image, height, width, depth):
         image.set_shape([height, width])
     return image
 
-def _get_pcl(pcl):
+def _get_pcl(pcl, rows, cols):
     """
     Decode and put point cloud in the right form. nx4
     """
-    pcl = tf.decode_raw(features['pclA'], tf.float32)
-    pcl = tf.reshape(pcl, [-1, 4])
-    #pcl.set_shape([-1, 4])
+    pcl = tf.decode_raw(pcl, tf.float32)
+    pcl = tf.reshape(pcl, [rows, cols])
+    pcl.set_shape([rows, cols])
     return pcl
 
 def parse_example_proto(exampleSerialized, **kwargs):
@@ -89,20 +89,27 @@ def parse_example_proto(exampleSerialized, **kwargs):
     """
     featureMap = {
         'fileID': tf.FixedLenFeature([3], dtype=tf.int64),
-        'images': tf.FixedLenFeature([], dtype=tf.string, default_value=''),
-        'pclA': tf.FixedLenFeature([], dtype=tf.float32, default_value=''),
-        'pclB': tf.FixedLenFeature([], dtype=tf.float32, default_value=''),
+        'images': tf.FixedLenFeature([], dtype=tf.string),
+        'pclA': tf.FixedLenFeature([], dtype=tf.float32),
+        'pclB': tf.FixedLenFeature([], dtype=tf.float32),
         'tMatTarget': tf.FixedLenFeature([12], dtype=tf.float32)
         }
+
     features = tf.parse_single_example(exampleSerialized, featureMap)
+
+    print(features['fileID'].get_shape())
+    print(features['images'].get_shape())
+    print(features['pclA'].get_shape())
+    print(features['pclB'].get_shape())
+    print(features['tMatTarget'].get_shape())
 
     fileID = features['fileID']
     images = _decode_byte_image(features['images'],
                                 kwargs.get('imageDepthRows'),
                                 kwargs.get('imageDepthCols'),
                                 kwargs.get('imageDepthChannels'))
-    pclA = _get_pcl(features['pclA'], kwargs.get['pclRows'], kwargs.get['pclCols'])
-    pclB = _get_pcl(features['pclB'], kwargs.get['pclRows'], kwargs.get['pclCols'])
+    pclA = _get_pcl(features['pclA'], kwargs.get('pclRows'), kwargs.get('pclCols'))
+    pclB = _get_pcl(features['pclB'], kwargs.get('pclRows'), kwargs.get('pclCols'))
     tMat = features['tMatTarget']
 
     # PCLs will hold padded [0, 0, 0, 0] points at the end that will be ignored during usage
@@ -131,12 +138,12 @@ def tfrecord_writer(fileID,
     flatImage = np.asarray(flatImage, np.float32)
     flatImageList = flatImage.tostring()
     # Point Clouds
-    pclA = pclA.reshape(pclA.shape[0]*pclA.shape[1]) # nx4
+    pclA = pclA.reshape(pclA.shape[0]*pclA.shape[1]) # 3 x PCL_COLS
     pclAlist = pclA.tolist()
-    pclB = pclB.reshape(pclB.shape[0]*pclB.shape[1]) # mx4
+    pclB = pclB.reshape(pclB.shape[0]*pclB.shape[1]) # 3 x PCL_COLS
     pclBlist = pclB.tolist()
     # Target Transformation
-    tMatTarget = tMatTarget.reshape(tMatTarget.shape[0]*tMatTarget.shape[1]) # 4x4
+    tMatTarget = tMatTarget.reshape(tMatTarget.shape[0]*tMatTarget.shape[1]) # 3x4
     tMatTargetList = tMatTarget.tolist()
 
     writer = tf.python_io.TFRecordWriter(tfRecordPath)
