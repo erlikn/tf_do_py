@@ -36,6 +36,13 @@ print("Reading %s" % jsonToRead)
 with open('Model_Settings/'+jsonToRead) as data_file:
     modelParams = json.load(data_file)
 
+import os
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
+
+from tensorflow.python.client import device_lib
+print(device_lib.list_local_devices())
+
 # import input & output modules 
 import Data_IO.data_input as data_input
 import Data_IO.data_output as data_output

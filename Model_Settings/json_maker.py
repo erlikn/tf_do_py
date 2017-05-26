@@ -108,8 +108,8 @@ data = {
     'clipNorm' : 1.0,
     'lossFunction' : 'L2',
     # Train Parameters
-    'trainBatchSize' : 1,
-    'testBatchSize' : 1,
+    'trainBatchSize' : 64,
+    'testBatchSize' : 64,
     'outputSize' : 12, # 3x4 = tMatRows x tMatCols
     'trainMaxSteps' : 30000,
     'testMaxSteps' : 1,
