@@ -155,9 +155,9 @@ def loss(pred, target, **kwargs): # batchSize=Sne
     """
     return model_base.loss(pred, target, **kwargs)
 
-def weighted_loss(tMatP, tMatT, **modelParams):
+def weighted_loss(tMatP, tMatT, **kwargs):
     mask = np.array([[100, 100, 100, 1, 100, 100, 100, 1, 100, 100, 100, 1]], dtype=np.float32)
-    mask = np.repeat(mask, modelParams['activeBatchSize'], axis=0)
+    mask = np.repeat(mask, kwargs.get('activeBatchSize'), axis=0)
     tMatP = tf.multiply(mask, tMatP)
     tMatT = tf.multiply(mask, tMatT)
     return model_base.loss(tMatP, tMatT, **kwargs) 
