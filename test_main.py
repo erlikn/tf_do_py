@@ -101,14 +101,15 @@ def test():
         # Build a Graph that computes the HAB predictions from the
         # inference model.
         tMatP = model_cnn.inference(images, **modelParams)
-        # Calculate loss.
+
+        # Calculate loss. 2 options:
+
         # use mask to get degrees significant
-        mask = np.array([[100, 100, 100, 1, 100, 100, 100, 1, 100, 100, 100, 1]], dtype=np.float32)
-        mask = np.repeat(mask, modelParams['activeBatchSize'], axis=0)
-        tMatP = tf.multiply(mask, tMatP)
-        tMatT = tf.multiply(mask, tMatT)
-        loss = model_cnn.loss(tMatP, tMatT, **modelParams)
-        
+        loss = model_cnn.weighted_loss(tMatP, tMatT, **modelParams)
+
+        # pcl based
+        #loss = model_cnn.pcl_loss(pclA, tMatP, tMatT, **modelParams)
+
         # Create a saver.
         saver = tf.train.Saver(tf.global_variables())
 

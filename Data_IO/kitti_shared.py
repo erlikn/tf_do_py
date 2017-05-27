@@ -56,8 +56,8 @@ def transform_pcl(xyz, tMat):
     '''
     pointcloud i 3xN, and tMat 3x4
     '''
-    tMat = _add_row4_tmat(tMat)
-    # append a ones row
+    tMat = _add_row4_tmat(_get_3x4_tmat(tMat))
+    # append a ones row to xyz
     xyz = np.append(xyz, np.ones(shape=[1, xyz.shape[1]]), axis=0)
     xyz = np.matmul(tMat, xyz)
     # remove last row

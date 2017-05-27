@@ -35,6 +35,7 @@ from __future__ import absolute_import
 from __future__ import division
 
 import tensorflow as tf
+import numpy as np
 
 import Model_Factory.model_base as model_base
 
@@ -153,6 +154,13 @@ def loss(pHAB, tHAB, **kwargs): # batchSize=Sne
       Loss tensor of type float.
     """
     return model_base.loss(pHAB, tHAB, **kwargs)
+
+def weighted_loss(tMatP, tMatT, **modelParams):
+    mask = np.array([[100, 100, 100, 1, 100, 100, 100, 1, 100, 100, 100, 1]], dtype=np.float32)
+    mask = np.repeat(mask, modelParams['activeBatchSize'], axis=0)
+    tMatP = tf.multiply(mask, tMatP)
+    tMatT = tf.multiply(mask, tMatT)
+    return model_base.loss(pHAB, tHAB, **kwargs) 
 
 def pcl_loss(pclA, tMatP, tMatT, **kwargs): # batchSize=Sne
     """

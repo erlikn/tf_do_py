@@ -31,10 +31,17 @@ PHASE = 'train'
 # import json_maker, update json files and read requested json file
 import Model_Settings.json_maker as json_maker
 json_maker.recompile_json_files()
-jsonToRead = '170127_TWN_MOM_B.json'
+jsonToRead = '170523_ITR_B_1.json'
 print("Reading %s" % jsonToRead)
 with open('Model_Settings/'+jsonToRead) as data_file:
     modelParams = json.load(data_file)
+
+import os
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
+
+from tensorflow.python.client import device_lib
+print(device_lib.list_local_devices())
 
 # import input & output modules 
 import Data_IO.data_input as data_input
@@ -59,8 +66,6 @@ def _get_control_params():
     #params['shardMeta'] = model_cnn.getShardsMetaInfo(FLAGS.dataDir, params['phase'])
 
     modelParams['existingParams'] = None
-    if modelParams['initExistingWeights'] is not None and modelParams['initExistingWeights'] != "":
-        modelParams['existingParams'] = np.load(modelParams['initExistingWeights']).item()
 
     if modelParams['phase'] == 'train':
         modelParams['activeBatchSize'] = modelParams['trainBatchSize']
@@ -107,14 +112,20 @@ def train():
                                      trainable=False)
 
         # Get images and transformation for model_cnn.
-        imagesOrig, images, pOrig, tHAB, tfrecFileIDs = data_input.inputs(**modelParams)
-
+        images, pclA, pclB, tMatT, tfrecFileIDs = data_input.inputs(**modelParams)
         # Build a Graph that computes the HAB predictions from the
         # inference model.
-        pHAB = model_cnn.inference(images, **modelParams)
+        tMatP = model_cnn.inference(images, **modelParams)
+        
+        # Calculate loss. 2 options:
+        
+        # use mask to get degrees significant
+        # What about adaptive mask to zoom into differences at each CNN stack !!!
+        loss = model_cnn.weighted_loss(tMatP, tMatT, **modelParams)
 
-        # Calculate loss.
-        loss = model_cnn.loss(pHAB, tHAB, **modelParams)
+
+        # pcl based
+        #loss = model_cnn.pcl_loss(pclA, tMatP, tMatT, **modelParams)
 
         # Create a saver.
         saver = tf.train.Saver(tf.global_variables())
@@ -135,36 +146,29 @@ def train():
 
         # restore a saver.
         saver = tf.train.Saver(tf.global_variables())
-        saver.restore(sess, modelParams['trainLogDir']+'/model.ckpt-89999')
+        saver.restore(sess, modelParams['trainLogDir']+'/model.ckpt-'+str(modelParams['trainMaxSteps']-1))
 
         # Start the queue runners.
         tf.train.start_queue_runners(sess=sess)
         
-        HABperPixelsum = 0
         durationSum = 0
         ######### USE LATEST STATE TO WARP IMAGES
         if modelParams['writeWarpedImages']:
+            lossValueSum = 0
             stepsForOneDataRound = int((modelParams['numExamples']/modelParams['activeBatchSize']))+1
             print('Warping images with batch size %d in %d steps' % (modelParams['activeBatchSize'], stepsForOneDataRound))
             for step in xrange(stepsForOneDataRound):
                 startTime = time.time()
-                evImagesOrig, evImages, evPOrig, evtHAB, evpHAB, evtfrecFileIDs, evlossValue = sess.run([imagesOrig, images, pOrig, tHAB, pHAB, tfrecFileIDs, loss])
-                durationSum += (time.time() - startTime)
-                HABRES = evtHAB-evpHAB
-                HABperPixel = 0
-                for i in xrange(modelParams['activeBatchSize']):
-                    H = np.asarray([[HABRES[i][0],HABRES[i][1],HABRES[i][2],HABRES[i][3]],
-                                    [HABRES[i][4],HABRES[i][5],HABRES[i][6],HABRES[i][7]]], np.float32)
-                    HABperPixel += np.sqrt((H*H).sum(axis=0)).mean()
-                HABperPixel = HABperPixel/modelParams['activeBatchSize']
-                HABperPixelsum += HABperPixel
+                evImages, evPclA, evPclB, evtMatT, evtMatP, evtfrecFileIDs, evlossValue = sess.run([images, pclA, pclB, tMatT, tMatP, tfrecFileIDs, loss])
+                duration = time.time() - startTime
+                durationSum += duration
                 #### put imageA, warpped imageB by pHAB, HAB-pHAB as new HAB, changed fileaddress tfrecFileIDs
-                data_output.output(evImagesOrig, evImages, evPOrig, evtHAB, evpHAB, evtfrecFileIDs, **modelParams)
+                data_output.output(evImages, evPclA, evPclB, evtMatT, evtMatP, evtfrecFileIDs, **modelParams)
                 # Print Progress Info
                 if ((step % FLAGS.ProgressStepReportStep) == 0) or ((step+1) == stepsForOneDataRound):
                     print('Progress: %.2f%%, Loss: %.2f, Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
-                            ((100*step)/stepsForOneDataRound, HABperPixelsum/(step+1), durationSum/60, (((durationSum*stepsForOneDataRound)/(step+1))/60)-(durationSum/60) ) )
-            print('Average training loss = %.2f - Average time per sample= %.2f s, Steps = %d' % (HABperPixelsum/step, durationSum/(step*modelParams['activeBatchSize']), step))
+                            ((100*step)/stepsForOneDataRound, evlossValue/(step+1), durationSum/60, (((durationSum*stepsForOneDataRound)/(step+1))/60)-(durationSum/60) ) )
+            print('Average training loss = %.2f - Average time per sample= %.2f s, Steps = %d' % (evlossValue/modelParams['activeBatchSize'], durationSum/(step*modelParams['activeBatchSize']), step))
 
 
 def main(argv=None):  # pylint: disable=unused-argumDt
