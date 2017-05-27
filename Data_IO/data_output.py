@@ -19,7 +19,7 @@ import tensorflow as tf
 import Data_IO.tfrecord_io as tfrecord_io
 import Data_IO.kitti_shared as kitti
 
-def _apply_prediction(pclA, tMatT, tMatP):
+def _apply_prediction(pclA, tMatT, tMatP, **kwargs):
     '''
     Transform pclA, Calculate new tMatT based on tMatP, Create new depth image
     Return:
@@ -31,8 +31,10 @@ def _apply_prediction(pclA, tMatT, tMatP):
     pclA = kitti.remove_trailing_zeros(pclA)
     # get transformed pclA based on tMatP
     pclATransformed = kitti.transform_pcl(pclA, tMatP)
+    pclATransformed = kitti._zero_pad(pclATransformed, pclATransformed.shape[1]-kwargs.get('pclCols'))
     # get new depth image of transformed pclA
-    depthImageA = kitti.get_depth_image_pano_pclView(pclATransformed)
+    _, depthImageA = kitti.get_depth_image_pano_pclView(pclATransformed)
+    print(pclATransformed.shape)
     # get residual tMat
     tMatResA2B = kitti.get_residual_tMat_A2B(tMatT, tMatP)
     return pclATransformed, tMatResA2B, depthImageA
@@ -51,7 +53,7 @@ def output(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrec
     for i in range(kwargs.get('activeBatchSize')):
         # split for depth dimension
         depthA, depthB = np.asarray(np.split(batchImages[i], 2, axis=2))
-        pclATransformed, tMatRes, depthATransformed = _apply_prediction(batchPclA[i], batchtMatT[i], batchtMatP[i])
+        pclATransformed, tMatRes, depthATransformed = _apply_prediction(batchPclA[i], batchtMatT[i], batchtMatP[i], **kwargs)
         # Write each Tensorflow record
         filename = str(batchTFrecFileIDs[i][0]) + "_" + str(batchTFrecFileIDs[i][1]) + "_" + str(batchTFrecFileIDs[i][2])
         tfrecord_io.tfrecord_writer(batchTFrecFileIDs[i],
