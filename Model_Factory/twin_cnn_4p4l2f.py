@@ -143,7 +143,7 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
 
     return fireOut
 
-def loss(pHAB, tHAB, **kwargs): # batchSize=Sne
+def loss(pred, target, **kwargs): # batchSize=Sne
     """Add L2Loss to all the trainable variables.
     Add summary for "Loss" and "Loss/avg".
     Args:
@@ -153,14 +153,14 @@ def loss(pHAB, tHAB, **kwargs): # batchSize=Sne
     Returns:
       Loss tensor of type float.
     """
-    return model_base.loss(pHAB, tHAB, **kwargs)
+    return model_base.loss(pred, target, **kwargs)
 
 def weighted_loss(tMatP, tMatT, **modelParams):
     mask = np.array([[100, 100, 100, 1, 100, 100, 100, 1, 100, 100, 100, 1]], dtype=np.float32)
     mask = np.repeat(mask, modelParams['activeBatchSize'], axis=0)
     tMatP = tf.multiply(mask, tMatP)
     tMatT = tf.multiply(mask, tMatT)
-    return model_base.loss(pHAB, tHAB, **kwargs) 
+    return model_base.loss(tMatP, tMatT, **kwargs) 
 
 def pcl_loss(pclA, tMatP, tMatT, **kwargs): # batchSize=Sne
     """
