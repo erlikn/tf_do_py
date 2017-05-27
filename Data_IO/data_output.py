@@ -31,17 +31,16 @@ def _apply_prediction(pclA, tMatT, tMatP, **kwargs):
     pclA = kitti.remove_trailing_zeros(pclA)
     # get transformed pclA based on tMatP
     pclATransformed = kitti.transform_pcl(pclA, tMatP)
-    pclATransformed = kitti._zero_pad(pclATransformed, pclATransformed.shape[1]-kwargs.get('pclCols'))
     # get new depth image of transformed pclA
     _, depthImageA = kitti.get_depth_image_pano_pclView(pclATransformed)
-    print(pclATransformed.shape)
+    pclATransformed = kitti._zero_pad(pclATransformed, kwargs.get('pclCols')-pclATransformed.shape[1])
     # get residual tMat
     tMatResA2B = kitti.get_residual_tMat_A2B(tMatT, tMatP)
     return pclATransformed, tMatResA2B, depthImageA
 
 def output(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrecFileIDs, **kwargs):
     """
-    TODO: SIMILAR TO DATA INPUT -> WE NEED A QUEUE RUNNER TO WRITE THIS OFF TO BE FASTER 
+    TODO: SIMILAR TO DATA INPUT -> WE NEED A QUEUE RUNNER TO WRITE THIS OFF TO BE FASTER
 
     Everything evaluated
     Warp second image based on predicted HAB and write to the new address
