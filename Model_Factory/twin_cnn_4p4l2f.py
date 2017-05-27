@@ -154,6 +154,34 @@ def loss(pHAB, tHAB, **kwargs): # batchSize=Sne
     """
     return model_base.loss(pHAB, tHAB, **kwargs)
 
+def pcl_loss(pclA, tMatP, tMatT, **kwargs): # batchSize=Sne
+    """
+    Generate a ground truth point cloud using ground truth transformation
+    Generate a prediction point cloud using predicted transformation
+    L2 difference between ground truth and predicted point cloud is the loss value
+    """
+    # pclA, tMatP, tMatT are in batches
+    # tMatP, tMatT should get a 0,0,0,1 row and be reshaped to 4x4
+    tMatP = tf.concat([tMatP, tf.constant(np.repeat(np.array([[0, 0, 0, 1]],
+                                                             dtype=np.float32),
+                                                    kwargs.get('activeBatchSize'),
+                                                    axis=0))],
+                      1)
+    tMatT = tf.concat([tMatT, tf.constant(np.repeat(np.array([[0, 0, 0, 1]],
+                                                             dtype=np.float32),
+                                                    kwargs.get('activeBatchSize'),
+                                                    axis=0))],
+                      1)
+    tMatP = tf.reshape(tMatP, [kwargs.get('activeBatchSize'), 4, 4])
+    tMatT = tf.reshape(tMatT, [kwargs.get('activeBatchSize'), 4, 4])
+    # pclA should get a row of ones
+    pclA = tf.concat([pclA, tf.constant(np.ones([kwargs.get('activeBatchSize'), 1, kwargs.get('pclCols')],
+                                                dtype=np.float32))],
+                     1)
+    pclP = tf.matmul(tMatP, pclA)
+    pclT = tf.matmul(tMatT, pclA)
+    return model_base.loss(pclP, pclT, **kwargs)
+
 def train(loss, globalStep, **kwargs):
     return model_base.train(loss, globalStep, **kwargs)
 

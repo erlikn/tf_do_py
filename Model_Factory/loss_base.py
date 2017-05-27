@@ -31,7 +31,6 @@ def add_loss_summaries(total_loss, batchSize):
 
     return loss_averages_op
 
-
 def _l2_loss(pred, tval): # batchSize=Sne
     """Add L2Loss to all the trainable variables.
     

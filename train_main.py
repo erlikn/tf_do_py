@@ -101,13 +101,20 @@ def train():
         # Build a Graph that computes the HAB predictions from the
         # inference model.
         tMatP = model_cnn.inference(images, **modelParams)
-        # Calculate loss.
+        
+        # Calculate loss. 2 options:
+        
         # use mask to get degrees significant
+        # What about adaptive mask to zoom into differences at each CNN stack !!!
         mask = np.array([[100, 100, 100, 1, 100, 100, 100, 1, 100, 100, 100, 1]], dtype=np.float32)
         mask = np.repeat(mask, modelParams['activeBatchSize'], axis=0)
         tMatP = tf.multiply(mask, tMatP)
         tMatT = tf.multiply(mask, tMatT)
         loss = model_cnn.loss(tMatP, tMatT, **modelParams)
+
+        # pcl based
+        #loss = model_cnn.pcl_loss(pclA, tMatP, tMatT, **modelParams)
+
         # Build a Graph that trains the model with one batch of examples and
         # updates the model parameters.
         opTrain = model_cnn.train(loss, globalStep, **modelParams)
