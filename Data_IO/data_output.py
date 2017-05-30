@@ -83,6 +83,6 @@ def write_predictions(tfrecID, tmatP, folderOut):
     Write prediction outputs to generate path map
     """
     _set_folders(folderOut)
-    dataJson = {'tmat' : tmatP}
+    dataJson = {'tmat' : tmatP.tolist()}
     write_json_file(folderOut + '/' + str(tfrecID[0]) + '_' + str(tfrecID[1]) + str(tfrecID[2]), dataJson)
     return
