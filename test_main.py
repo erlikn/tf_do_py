@@ -140,7 +140,7 @@ def test():
 
         lossValueSum = 0
         durationSum = 0
-
+        durationSumAll = 0
         print('Warping images with batch size %d in %d steps' % (modelParams['activeBatchSize'], modelParams['maxSteps']))
 
         testValueSampleResults = list()
@@ -152,8 +152,17 @@ def test():
             durationSum += duration
             lossValueSum += evlossValue
 
-            _write_to_csv(modelParams['testLogDir']+'/testRes'+jsonToRead.replace('.json', '_T.csv'), evtMatT)
-            _write_to_csv(modelParams['testLogDir']+'/testRes'+jsonToRead.replace('.json', '_P.csv'), evtMatP)
+            #_write_to_csv(modelParams['testLogDir']+'/testRes'+jsonToRead.replace('.json', '_T.csv'), evtMatT)
+            #_write_to_csv(modelParams['testLogDir']+'/testRes'+jsonToRead.replace('.json', '_P.csv'), evtMatP)
+
+            # Write test outputs tfrecords
+            #### put imageA, warpped imageB by pHAB, HAB-pHAB as new HAB, changed fileaddress tfrecFileIDs
+            #if (step == 0):
+            #    data_output.output_with_test_image_files(evImagesOrig, evImages, evPOrig, evtHAB, evpHAB, evtfrecFileIDs, **modelParams)
+            #else:
+            data_output.output(evImages, evPclA, evPclB, evtMatT, evtMatP, evtfrecFileIDs, **modelParams)
+            duration = time.time() - startTime
+            durationSumAll += duration
 
             # print out control outputs 
             if step % FLAGS.printOutStep == 0:
@@ -175,12 +184,8 @@ def test():
                 print('Progress: %.2f%%, Loss: %.2f, Elapsed: %.2f mins, Training Completion in: %.2f mins' %
                         ((100*step)/modelParams['maxSteps'], lossValueSum/(step+1), durationSum/60,
                          (((durationSum*modelParams['maxSteps'])/(step+1))/60)-(durationSum/60)))
-            # Write test outputs tfrecords
-            #### put imageA, warpped imageB by pHAB, HAB-pHAB as new HAB, changed fileaddress tfrecFileIDs
-            #if (step == 0):
-            #    data_output.output_with_test_image_files(evImagesOrig, evImages, evPOrig, evtHAB, evpHAB, evtfrecFileIDs, **modelParams)
-            #else:
-            data_output.output(evImages, evPclA, evPclB, evtMatT, evtMatP, evtfrecFileIDs, **modelParams)
+                print('Total Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
+                            durationSumAll/60, (((durationSumAll*stepsForOneDataRound)/(step+1))/60)-(durationSumAll/60))
             stepFinal = step
 
         step = stepFinal+1

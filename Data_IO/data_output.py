@@ -52,9 +52,6 @@ def output(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrec
     Raises:
       ValueError: If no dataDir
     """
-    pclFolderPath = _get_pcl_folder(pclFolder, seqIDs[i])
-    pclFilenames = _get_file_names(pclFolderPath)
-    startTime = time.time()
     num_cores = multiprocessing.cpu_count() - 2
     Parallel(n_jobs=num_cores)(delayed(output_loop)(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrecFileIDs, i, **kwargs) for i in range(kwargs.get('activeBatchSize')))
     #for i in range(kwargs.get('activeBatchSize')):
@@ -105,6 +102,9 @@ def write_predictions(tfrecID, tmatP, folderOut):
     Write prediction outputs to generate path map
     """
     _set_folders(folderOut)
-    dataJson = {'tmat' : tmatP.tolist()}
-    write_json_file(folderOut + '/' + str(tfrecID[0]) + '_' + str(tfrecID[1]) + str(tfrecID[2]), dataJson)
+    dataJson = {'seq' : tfrecID[0].tolist(),
+                'idx' : tfrecID[1].tolist(),
+                'idxNext' : tfrecID[2].tolist(),
+                'tmat' : tmatP.tolist()}
+    write_json_file(folderOut + '/' + str(tfrecID[0]) + '_' + str(tfrecID[1]) + '_' + str(tfrecID[2]), dataJson)
     return

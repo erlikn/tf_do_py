@@ -144,6 +144,7 @@ def train():
         summaryWriter = tf.summary.FileWriter(modelParams['trainLogDir'], sess.graph)
 
         durationSum = 0
+        durationSumAll = 0
         for step in xrange(modelParams['maxSteps']):
             startTime = time.time()
             _, lossValue = sess.run([opTrain, loss])
@@ -186,10 +187,14 @@ def train():
                 durationSum += duration
                 #### put imageA, warpped imageB by pHAB, HAB-pHAB as new HAB, changed fileaddress tfrecFileIDs
                 data_output.output(evImages, evPclA, evPclB, evtMatT, evtMatP, evtfrecFileIDs, **modelParams)
+                duration = time.time() - startTime
+                durationSumAll += duration
                 # Print Progress Info
                 if ((step % FLAGS.ProgressStepReportOutputWrite) == 0) or ((step+1) == stepsForOneDataRound):
                     print('Progress: %.2f%%, Loss: %.2f, Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
-                            ((100*step)/stepsForOneDataRound, evlossValue/(step+1), durationSum/60, (((durationSum*stepsForOneDataRound)/(step+1))/60)-(durationSum/60) ) )
+                            ((100*step)/stepsForOneDataRound, evlossValue/(step+1), durationSum/60, (((durationSum*stepsForOneDataRound)/(step+1))/60)-(durationSum/60)))
+                    print('Total Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
+                            durationSumAll/60, (((durationSumAll*stepsForOneDataRound)/(step+1))/60)-(durationSumAll/60))
             print('Average training loss = %.2f - Average time per sample= %.2f s, Steps = %d' % (evlossValue/modelParams['activeBatchSize'], durationSum/(step*modelParams['activeBatchSize']), step))
 
 
