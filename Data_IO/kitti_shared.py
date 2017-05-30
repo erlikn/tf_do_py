@@ -228,7 +228,8 @@ def get_depth_image_pano_pclView(xyz, height=1.6):
 ############################################################################
 def remove_trailing_zeros(xyz):
     '''Remove trailing 0 points'''
-    condition = np.mod(xyz, 3) != [[0], [0], [0]]
+    condition = (xyz[0] != 0) | (xyz[1] != 0) | (xyz[2] != 0)
+    condition = [[condition], [condition], [condition]]
     xyz = np.extract(condition, xyz)
     xyz = xyz.reshape([3, -1])
     return xyz

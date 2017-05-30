@@ -32,7 +32,7 @@ def _apply_prediction(pclA, tMatT, tMatP, **kwargs):
     # get transformed pclA based on tMatP
     pclATransformed = kitti.transform_pcl(pclA, tMatP)
     # get new depth image of transformed pclA
-    _, depthImageA = kitti.get_depth_image_pano_pclView(pclATransformed)
+    depthImageA, _ = kitti.get_depth_image_pano_pclView(pclATransformed)
     pclATransformed = kitti._zero_pad(pclATransformed, kwargs.get('pclCols')-pclATransformed.shape[1])
     # get residual tMat
     tMatResA2B = kitti.get_residual_tMat_A2B(tMatT, tMatP)
@@ -52,6 +52,7 @@ def output(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrec
     for i in range(kwargs.get('activeBatchSize')):
         # split for depth dimension
         depthA, depthB = np.asarray(np.split(batchImages[i], 2, axis=2))
+        depthB = depthB.reshape(kwargs.get('imageDepthRows'), kwargs.get('imageDepthCols'))
         pclATransformed, tMatRes, depthATransformed = _apply_prediction(batchPclA[i], batchtMatT[i], batchtMatP[i], **kwargs)
         # Write each Tensorflow record
         filename = str(batchTFrecFileIDs[i][0]) + "_" + str(batchTFrecFileIDs[i][1]) + "_" + str(batchTFrecFileIDs[i][2])
