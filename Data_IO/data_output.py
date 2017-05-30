@@ -65,7 +65,7 @@ def output(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrec
             folderTmat = kwargs.get('trainLogDir')+'/'+'tmat'
         else:
             folderTmat = kwargs.get('testLogDir')+'/'+'tmat'
-        write_predictions(batchTFrecFileIDs[i], batchtMatP[i], folder_tmat)
+        write_predictions(batchTFrecFileIDs[i], batchtMatP[i], folderTmat)
     return
 
 def write_json_file(filename, datafile):
