@@ -56,12 +56,12 @@ def output(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrec
     pclFilenames = _get_file_names(pclFolderPath)
     startTime = time.time()
     num_cores = multiprocessing.cpu_count() - 2
-    Parallel(n_jobs=num_cores)(delayed(output_loop)(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrecFileIDs, **kwargs, i) for i in range(kwargs.get('activeBatchSize')))
+    Parallel(n_jobs=num_cores)(delayed(output_loop)(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrecFileIDs, i, **kwargs) for i in range(kwargs.get('activeBatchSize')))
     #for i in range(kwargs.get('activeBatchSize')):
     #    output_loop(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrecFileIDs, **kwargs):
     return
 
-def output_loop(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrecFileIDs, **kwargs, i):
+def output_loop(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrecFileIDs, i, **kwargs):
     """
     TODO: SIMILAR TO DATA INPUT -> WE NEED A QUEUE RUNNER TO WRITE THIS OFF TO BE FASTER
 
