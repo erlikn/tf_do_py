@@ -60,7 +60,8 @@ def odometery_writer(ID,
     imgDepthA, imgDepthB: numpy matrix of size 128x512
     tmatTarget: numpy matrix of size 4x4
     tfRecFolder: folder name
-    '''
+    '''        Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j) for j in range(0,len(pclFilenames)-1))
+
     filename = str(ID[0]) + "_" + str(ID[1]) + "_" + str(ID[2])
     tfrecord_io.tfrecord_writer(ID,
                                 pclA, pclB,
@@ -345,10 +346,10 @@ def prepare_dataset(datasetType, pclFolder, poseFolder, seqIDs, tfRecFolder):
         pclFolderPath = _get_pcl_folder(pclFolder, seqIDs[i])
         pclFilenames = _get_file_names(pclFolderPath)
         startTime = time.time()
-        num_cores = multiprocessing.cpu_count()
-        for j in range(0,len(pclFilenames)-1):
-            process_dataset(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j)
-        #Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j) for j in range(0,len(pclFilenames)-1))
+        num_cores = multiprocessing.cpu_count() - 2
+        #for j in range(0,len(pclFilenames)-1):
+        #    process_dataset(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j)
+        Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j) for j in range(0,len(pclFilenames)-1))
     print('Done')
 
 ################################

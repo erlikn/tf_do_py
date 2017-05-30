@@ -16,6 +16,9 @@ import matplotlib.pyplot as plt
 import csv
 import tensorflow as tf
 
+from joblib import Parallel, delayed
+import multiprocessing
+
 import Data_IO.tfrecord_io as tfrecord_io
 import Data_IO.kitti_shared as kitti
 
@@ -49,23 +52,42 @@ def output(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrec
     Raises:
       ValueError: If no dataDir
     """
-    for i in range(kwargs.get('activeBatchSize')):
-        # split for depth dimension
-        depthA, depthB = np.asarray(np.split(batchImages[i], 2, axis=2))
-        depthB = depthB.reshape(kwargs.get('imageDepthRows'), kwargs.get('imageDepthCols'))
-        pclATransformed, tMatRes, depthATransformed = _apply_prediction(batchPclA[i], batchtMatT[i], batchtMatP[i], **kwargs)
-        # Write each Tensorflow record
-        filename = str(batchTFrecFileIDs[i][0]) + "_" + str(batchTFrecFileIDs[i][1]) + "_" + str(batchTFrecFileIDs[i][2])
-        tfrecord_io.tfrecord_writer(batchTFrecFileIDs[i],
-                                    pclATransformed, batchPclB[i],
-                                    depthATransformed, depthB,
-                                    tMatRes,
-                                    kwargs.get('warpedOutputFolder')+'/', filename)
-        if kwargs.get('phase') == 'train':
-            folderTmat = kwargs.get('trainLogDir')+'/'+'tmat'
-        else:
-            folderTmat = kwargs.get('testLogDir')+'/'+'tmat'
-        write_predictions(batchTFrecFileIDs[i], batchtMatP[i], folderTmat)
+    pclFolderPath = _get_pcl_folder(pclFolder, seqIDs[i])
+    pclFilenames = _get_file_names(pclFolderPath)
+    startTime = time.time()
+    num_cores = multiprocessing.cpu_count() - 2
+    Parallel(n_jobs=num_cores)(delayed(output_loop)(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrecFileIDs, **kwargs, i) for i in range(kwargs.get('activeBatchSize')))
+    #for i in range(kwargs.get('activeBatchSize')):
+    #    output_loop(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrecFileIDs, **kwargs):
+    return
+
+def output_loop(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrecFileIDs, **kwargs, i):
+    """
+    TODO: SIMILAR TO DATA INPUT -> WE NEED A QUEUE RUNNER TO WRITE THIS OFF TO BE FASTER
+
+    Everything evaluated
+    Warp second image based on predicted HAB and write to the new address
+    Args:
+    Returns:
+    Raises:
+      ValueError: If no dataDir
+    """
+    # split for depth dimension
+    depthA, depthB = np.asarray(np.split(batchImages[i], 2, axis=2))
+    depthB = depthB.reshape(kwargs.get('imageDepthRows'), kwargs.get('imageDepthCols'))
+    pclATransformed, tMatRes, depthATransformed = _apply_prediction(batchPclA[i], batchtMatT[i], batchtMatP[i], **kwargs)
+    # Write each Tensorflow record
+    filename = str(batchTFrecFileIDs[i][0]) + "_" + str(batchTFrecFileIDs[i][1]) + "_" + str(batchTFrecFileIDs[i][2])
+    tfrecord_io.tfrecord_writer(batchTFrecFileIDs[i],
+                                pclATransformed, batchPclB[i],
+                                depthATransformed, depthB,
+                                tMatRes,
+                                kwargs.get('warpedOutputFolder')+'/', filename)
+    if kwargs.get('phase') == 'train':
+        folderTmat = kwargs.get('trainLogDir')+'/'+'tmat'
+    else:
+        folderTmat = kwargs.get('testLogDir')+'/'+'tmat'
+    write_predictions(batchTFrecFileIDs[i], batchtMatP[i], folderTmat)
     return
 
 def write_json_file(filename, datafile):
