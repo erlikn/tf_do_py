@@ -31,6 +31,12 @@ IMG_ROWS = 64  # makes image of 2x64 = 128
 IMG_COLS = 512
 PCL_COLS = 62074 # All PCL files should have rows
 PCL_ROWS = 3
+
+############################################################################
+def get_pose_path(poseFolder, seqID):
+    return poseFolder + seqID + ".txt"
+def get_pose_data(posePath):
+    return np.loadtxt(open(posePath, "r"), delimiter=" ")
 ############################################################################
 def _get_3x4_tmat(poseRow):
     return poseRow.reshape([3,4])

@@ -81,9 +81,9 @@ def output_loop(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batch
                                 tMatRes,
                                 kwargs.get('warpedOutputFolder')+'/', filename)
     if kwargs.get('phase') == 'train':
-        folderTmat = kwargs.get('trainLogDir')+'/'+'tmat'
+        folderTmat = kwargs.get('tMatTrainDir')
     else:
-        folderTmat = kwargs.get('testLogDir')+'/'+'tmat'
+        folderTmat = kwargs.get('tMatTestDir')
     write_predictions(batchTFrecFileIDs[i], batchtMatP[i], folderTmat)
     return
 
@@ -106,5 +106,5 @@ def write_predictions(tfrecID, tmatP, folderOut):
                 'idx' : tfrecID[1].tolist(),
                 'idxNext' : tfrecID[2].tolist(),
                 'tmat' : tmatP.tolist()}
-    write_json_file(folderOut + '/' + str(tfrecID[0]) + '_' + str(tfrecID[1]) + '_' + str(tfrecID[2]), dataJson)
+    write_json_file(folderOut + '/' + str(tfrecID[0]) + '_' + str(tfrecID[1]) + '_' + str(tfrecID[2]) +'.json', dataJson)
     return

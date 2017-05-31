@@ -39,7 +39,7 @@ with open('Model_Settings/'+jsonToRead) as data_file:
 
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 from tensorflow.python.client import device_lib
 print(device_lib.list_local_devices())
@@ -184,8 +184,8 @@ def test():
                 print('Progress: %.2f%%, Loss: %.2f, Elapsed: %.2f mins, Training Completion in: %.2f mins' %
                         ((100*step)/modelParams['maxSteps'], lossValueSum/(step+1), durationSum/60,
                          (((durationSum*modelParams['maxSteps'])/(step+1))/60)-(durationSum/60)))
-                print('Total Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
-                            durationSumAll/60, (((durationSumAll*stepsForOneDataRound)/(step+1))/60)-(durationSumAll/60))
+               # print('Total Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
+               #             durationSumAll/60, (((durationSumAll*stepsForOneDataRound)/(step+1))/60)-(durationSumAll/60))
             stepFinal = step
 
         step = stepFinal+1
