@@ -60,6 +60,7 @@ def get_residual_tMat_A2B(tMatT, tMatP):
 ############################################################################
 def transform_pcl(xyz, tMat):
     '''
+    NEW XYZ = tMAT x XYZ
     pointcloud i 3xN, and tMat 3x4
     '''
     tMat = _add_row4_tmat(_get_3x4_tmat(tMat))

@@ -34,14 +34,89 @@ def _get_file_names(readFolder, fileFormat):
     filenames.sort()
     return filenames
 
-def _get_prediction(pFilenames, seqID):
-    
-    newlist = sorted(list_to_be_sorted, key=lambda k: k['name']) 
-    for i in range(len(pFilenames))
-    with open('Model_Settings/'+jsonToRead) as data_file:
-    modelParams = json.load(data_file)
+def _get_all_predictions(pFilenames):
+    """
+    read all predictions of all sequences to a list
+    """
+    predAllList = list()
+    seqList = list()
+    with open(modelParams['tMatDir']+'/'+pFilenames[0]) as data_file:
+        tMatJson = json.load(data_file)
+    seqList.append(tMatJson)
+    for i in range(1,len(pFilenames)):
+        with open(modelParams['tMatDir']+'/'+pFilenames[i]) as data_file:
+            tMatJson = json.load(data_file)
+        condSameSeq = pFilenames[i][0] == pFilenames[i-1][0] and pFilenames[i][1] == pFilenames[i-1][1]
+        if condSameSeq:
+            seqList.append(tMatJson)
+        if (not condSameSeq) or (i+1 == len(pFilenames)):
+            seqList = sorted(seqList, key=lambda k: k['idx'])
+            predAllList.append(seqList)
+    return predAllList
+
+def _get_prediction(predAllList, seqID):
+    """
+    get prediction for an specific sequence
+    """
+    return predAllList[int(seqID)]
+
+def _get_tMat_A_2_B(tMatA2o, tMatB2o):
+    '''
+    tMatA2o A -> O (source pcl is in A), tMatB2o B -> O (target pcl will be in B)
+    return tMat A -> B
+    '''
+    # tMatA2o: A -> Orig
+    # tMatB2o: B -> Orig ==> inv(tMatB2o): Orig -> B
+    # inv(tMatB2o) * tMatA2o : A -> B
+    tMatA2o = np.append(tMatA2o, [[0, 0, 0, 1]], axis=0)
+    tMatB2o = np.append(tMatB2o, [[0, 0, 0, 1]], axis=0)
+    tMatA2B = np.matmul(np.linalg.inv(tMatB2o), tMatA2o)
+    tMatA2B = np.delete(tMatA2B, tMatA2B.shape[0]-1, 0)
+    return tMatA2B
+
+def _get_gt_map_seq(gtPose):
+    origin = np.array([[0], [0], [0]], dtype=np.float32)
+    pathMap = np.ndarray(shape=[3,0], dtype=np.float32)
+    pathMap = np.append(pathMap, origin, axis=1)
+    for i in range(len(gtPose)-1):
+        poseA = kitti._get_3x4_tmat(gtPose[i])
+        poseB = kitti._get_3x4_tmat(gtPose[i+1])
+        pose = _get_tMat_A_2_B(poseA, poseB)
+        origin = kitti.transform_pcl(origin, pose)
+        pathMap = np.append(pathMap, origin, axis=1)
+    return pathMap
+def _get_gt_map(gtPose):
+    """
+    get the ground truth path map
+    pose are w.r.t. the origin
+    """
+    origin = np.array([[0], [0], [0]], dtype=np.float32)
+    pathMap = np.ndarray(shape=[3,0], dtype=np.float32)
+    pathMap = np.append(pathMap, origin, axis=1)
+    for i in range(len(gtPose)):
+        pose = kitti._get_3x4_tmat(gtPose[i])
+        pointT = kitti.transform_pcl(origin, pose)
+        pathMap = np.append(pathMap, pointT, axis=1)
+    return pathMap
+
+def _get_p_map(pPose):
+    """
+    get the predicted truth path map
+    poses are w.r.t. previous frame
+    """
+    origin = np.array([[0], [0], [0]], dtype=np.float32)
+    pathMap = np.ndarray(shape=[3,0], dtype=np.float32)
+    pathMap = np.append(pathMap, origin, axis=1)
+    for i in range(len(pPose)):
+        pose = kitti._get_3x4_tmat(np.array(pPose[i]['tmat']))
+        origin = kitti.transform_pcl(origin, pose)
+        pathMap = np.append(pathMap, origin, axis=1)
+    return pathMap
 
 def _get_control_params():
+    """
+    Get control parameters for the specific task
+    """
     modelParams['phase'] = PHASE
     #params['shardMeta'] = model_cnn.getShardsMetaInfo(FLAGS.dataDir, params['phase'])
 
@@ -68,15 +143,29 @@ def _get_control_params():
 
 def evaluate():
     # Read all prediction posefiles and sort them based on the seqID and frameID
-    pFilenames = _get_file_names(modelParams['tMatDir'])
-
+    pFilenames = _get_file_names(modelParams['tMatDir'], "")
+    predPoses = _get_all_predictions(pFilenames)
     # For each sequence
     for i in range(len(modelParams['seqIDs'])):
-        print('Processing sequences: %d / %d' % i, len(modelParams['seqIDs']))
-        # Read groundtruth posefiles
-        posePath = kitti.get_pose_path(modelParams['gTruthDir'], modelParams['seqIDs'][i])
-        poseFile = kitti.get_pose_data(posePath)
-    #  
+        print("Processing sequences: {0} / {1}".format(i, len(modelParams['seqIDs'])))
+        # Read groundtruth posefile for a seqID
+        # create map
+        gtPosePath = kitti.get_pose_path(modelParams['gTruthDir'], modelParams['seqIDs'][i])
+        gtPose = kitti.get_pose_data(gtPosePath)
+        gtMap = _get_gt_map(gtPose) # w.r.t. Original
+        gtMap = _get_gt_map_seq(gtPose) # w.r.t. sequential
+        # Get predictions for a seqID
+        # create map
+        pPose = _get_prediction(predPoses, modelParams['seqIDs'][i])
+        pMap = _get_p_map(pPose) # w.r.t. sequential
+        vis_path(gtMap, pMap)
+
+################################
+def vis_path(gtxyz, pxyz):
+    import matplotlib.pyplot as plt
+    plt.plot(gtxyz[0], gtxyz[1], 'r', pxyz[0], pxyz[1])
+    plt.show()
+
 
 def main(argv=None):  # pylint: disable=unused-argumDt
     _get_control_params()
@@ -89,12 +178,9 @@ def main(argv=None):  # pylint: disable=unused-argumDt
         print('Test sequences:' % seqIDtest)
         print('Prediction Input: %s' % modelParams['tMatDir'])
     print(modelParams['modelName'])
-    pFilenames = _get_file_names(modelParams['tMatDir'], "")
-    print(len(pFilenames))
-    print(pFilenames[0:35])
-    if input("IS PRESENTED INFORMATION VALID? ") != "yes":
-        print("Please consider updating the provided information!")
-        return
+    #if input("IS PRESENTED INFORMATION VALID? ") != "yes":
+    #    print("Please consider updating the provided information!")
+    #    return
     evaluate()
 
 main()
