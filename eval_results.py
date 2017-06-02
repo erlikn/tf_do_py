@@ -39,19 +39,20 @@ def _get_all_predictions(pFilenames):
     read all predictions of all sequences to a list
     """
     predAllList = list()
+    predAllListTemp = list()
     seqList = list()
+    for i in range(9):
+        predAllListTemp.append(seqList)
     with open(modelParams['tMatDir']+'/'+pFilenames[0]) as data_file:
         tMatJson = json.load(data_file)
     seqList.append(tMatJson)
     for i in range(1,len(pFilenames)):
         with open(modelParams['tMatDir']+'/'+pFilenames[i]) as data_file:
             tMatJson = json.load(data_file)
-        condSameSeq = pFilenames[i][0] == pFilenames[i-1][0] and pFilenames[i][1] == pFilenames[i-1][1]
-        if condSameSeq:
-            seqList.append(tMatJson)
-        if (not condSameSeq) or (i+1 == len(pFilenames)):
-            seqList = sorted(seqList, key=lambda k: k['idx'])
-            predAllList.append(seqList)
+        predAllListTemp[int(tMatJson['seq'])].append(tMatJson)
+    for i in range(9):       
+        seqList = sorted(predAllListTemp[i], key=lambda k: k['idx'])
+        predAllList.append(seqList)
     return predAllList
 
 def _get_prediction(predAllList, seqID):
@@ -113,6 +114,21 @@ def _get_p_map(pPose):
         pathMap = np.append(pathMap, origin, axis=1)
     return pathMap
 
+def _get_p_map_w_orig(pPose, gPose):
+    """
+    get the predicted truth path map
+    poses are w.r.t. previous frame
+    """
+    origin = np.array([[0], [0], [0]], dtype=np.float32)
+    pathMap = np.ndarray(shape=[3,0], dtype=np.float32)
+    pathMap = np.append(pathMap, origin, axis=1)
+    
+    for i in range(len(pPose)):
+        pose = kitti._get_3x4_tmat(np.array(pPose[i]['tmat']))
+        origin = kitti.transform_pcl(origin, pose)
+        pathMap = np.append(pathMap, origin, axis=1)
+    return pathMap
+
 def _get_control_params():
     """
     Get control parameters for the specific task
@@ -152,18 +168,27 @@ def evaluate():
         # create map
         gtPosePath = kitti.get_pose_path(modelParams['gTruthDir'], modelParams['seqIDs'][i])
         gtPose = kitti.get_pose_data(gtPosePath)
-        gtMap = _get_gt_map(gtPose) # w.r.t. Original
+        #gtMap = _get_gt_map(gtPose) # w.r.t. Original
         gtMap = _get_gt_map_seq(gtPose) # w.r.t. sequential
+        #vis_path(gtMap)
         # Get predictions for a seqID
         # create map
         pPose = _get_prediction(predPoses, modelParams['seqIDs'][i])
         pMap = _get_p_map(pPose) # w.r.t. sequential
-        vis_path(gtMap, pMap)
+        pMat = _get_p_map_w_orig(pPose, gtPose)
+        vis_path(pMap)
+        # Visualize both
+        #vis_path_both(gtMap, pMap)
 
 ################################
-def vis_path(gtxyz, pxyz):
+def vis_path_both(gtxyz, pxyz):
     import matplotlib.pyplot as plt
-    plt.plot(gtxyz[0], gtxyz[1], 'r', pxyz[0], pxyz[1])
+    plt.plot(gtxyz[0], gtxyz[1], 'r', pxyz[0], pxyz[1], 'b')
+    plt.show()
+
+def vis_path(xyz):
+    import matplotlib.pyplot as plt
+    plt.plot(xyz[0], xyz[1], 'm')
     plt.show()
 
 
