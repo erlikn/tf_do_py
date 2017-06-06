@@ -78,8 +78,13 @@ def _get_gt_map_seq(gtPose):
         poseA = kitti._get_3x4_tmat(gtPose[i])
         poseB = kitti._get_3x4_tmat(gtPose[i+1])
         pose = _get_tMat_A_2_B(poseA, poseB)
-        origin = kitti.transform_pcl(origin, pose)
+        pathMap = kitti.transform_pcl(pathMap, pose)
         pathMap = np.append(pathMap, origin, axis=1)
+    #### PathMap consists of all points transformed to the last frame coordinates
+    # transform them to origin access
+    pathMap = kitti.transform_pcl(pathMap, gtPose[gtPose.shape[0]-1])
+    # add final origin to the begining
+    pathMap = np.append(origin, pathMap, axis=1)
     return pathMap
 def _get_gt_map(gtPose):
     """
@@ -94,6 +99,25 @@ def _get_gt_map(gtPose):
         pointT = kitti.transform_pcl(origin, pose)
         pathMap = np.append(pathMap, pointT, axis=1)
     return pathMap
+def _get_gt_map_backwards(gtPose):
+    """
+    iterate backwards to transform step by step backwards
+    """
+    origin = np.array([[0], [0], [0]], dtype=np.float32)
+    pathMap = np.array([[0], [0], [0]], dtype=np.float32)
+    for i in range(gtPose.shape[0]-2,-1,-1):
+        poseA = kitti._get_3x4_tmat(gtPose[i])
+        poseB = kitti._get_3x4_tmat(gtPose[i+1])
+        poseB2A = _get_tMat_A_2_B(poseB, poseA)
+        pathMap = kitti.transform_pcl(pathMap, poseB2A)
+        pathMap = np.append(pathMap, origin, axis=1)
+    #### PathMap consists of all points transformed to the frame 0 coordinates
+    # transform them to origin access
+    pathMap = kitti.transform_pcl(pathMap, gtPose[0])
+    # add final origin
+    pathMap = np.append(pathMap, origin, axis=1)
+    return pathMap
+
 
 def _get_p_map(pPose):
     """
@@ -117,12 +141,15 @@ def _get_p_map_w_orig(pPose, gPose):
     origin = np.array([[0], [0], [0]], dtype=np.float32)
     pathMap = np.ndarray(shape=[3,0], dtype=np.float32)
     pathMap = np.append(pathMap, origin, axis=1)
-    gtpose = kitti._get_3x4_tmat(gPose[0])
-    pathMap = np.append(pathMap, kitti.transform_pcl(origin, gtpose), axis=1)
     for i in range(len(pPose)):
-        pose = kitti._get_3x4_tmat(np.array(pPose[i]['tmat']))
-        origin = kitti.transform_pcl(origin, pose)
+        poseA2B = kitti._get_3x4_tmat(np.array(pPose[i]['tmat']))
+        pathMap = kitti.transform_pcl(pathMap, poseA2B)
         pathMap = np.append(pathMap, origin, axis=1)
+    #### PathMap consists of all points transformed to the last frame coordinates
+    # transform them to origin access
+    pathMap = kitti.transform_pcl(pathMap, gPose[gPose.shape[0]-1])
+    # add final origin to the begining
+    pathMap = np.append(origin, pathMap, axis=1)
     return pathMap
 
 def _get_control_params():
@@ -164,15 +191,18 @@ def evaluate():
         # create map
         gtPosePath = kitti.get_pose_path(modelParams['gTruthDir'], modelParams['seqIDs'][i])
         gtPose = kitti.get_pose_data(gtPosePath)
-#        gtMap = _get_gt_map(gtPose) # w.r.t. Original
+        #gtMap = _get_gt_map(gtPose) # w.r.t. Original
+        #vis_path(gtMap, 'GTORIG')
         gtMap = _get_gt_map_seq(gtPose) # w.r.t. sequential
-        #vis_path(gtMap, 'GT')
+        #vis_path(gtMap, 'GTSEQ')
+        #gtMap = _get_gt_map_backwards(gtPose) # w.r.t. Backwards
+        #vis_path(gtMap, 'GTBACK')
         # Get predictions for a seqID
         # create map
         pPose = _get_prediction(predPoses, modelParams['seqIDs'][i])
-        pMap = _get_p_map(pPose) # w.r.t. sequential
+        #pMap = _get_p_map(pPose) # w.r.t. sequential
         pMap = _get_p_map_w_orig(pPose, gtPose)
-#        vis_path(pMap, 'Pred')
+        #vis_path(pMap, 'Pred')
         # Visualize both
         vis_path_both(gtMap, pMap)
 
@@ -186,7 +216,7 @@ def vis_path_both(gtxyz, pxyz):
 def vis_path(xyz, graphType=""):
     import matplotlib.pyplot as plt
     graph = plt.plot(xyz[0], xyz[1], 'm')
-    plt.legend([graph], [graphType])
+    plt.legend(graph, [graphType])
     plt.show()
 
 
