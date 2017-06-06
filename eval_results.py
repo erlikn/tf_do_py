@@ -31,7 +31,6 @@ def _get_file_names(readFolder, fileFormat):
     print(readFolder)
     print(fileFormat)
     filenames = [f for f in listdir(readFolder) if (isfile(join(readFolder, f)) and fileFormat in f)]
-    filenames.sort()
     return filenames
 
 def _get_all_predictions(pFilenames):
@@ -40,13 +39,9 @@ def _get_all_predictions(pFilenames):
     """
     predAllList = list()
     predAllListTemp = list()
-    seqList = list()
     for i in range(9):
-        predAllListTemp.append(seqList)
-    with open(modelParams['tMatDir']+'/'+pFilenames[0]) as data_file:
-        tMatJson = json.load(data_file)
-    seqList.append(tMatJson)
-    for i in range(1,len(pFilenames)):
+        predAllListTemp.append(list())
+    for i in range(0,len(pFilenames)):
         with open(modelParams['tMatDir']+'/'+pFilenames[i]) as data_file:
             tMatJson = json.load(data_file)
         predAllListTemp[int(tMatJson['seq'])].append(tMatJson)
@@ -122,7 +117,8 @@ def _get_p_map_w_orig(pPose, gPose):
     origin = np.array([[0], [0], [0]], dtype=np.float32)
     pathMap = np.ndarray(shape=[3,0], dtype=np.float32)
     pathMap = np.append(pathMap, origin, axis=1)
-    
+    gtpose = kitti._get_3x4_tmat(gPose[0])
+    pathMap = np.append(pathMap, kitti.transform_pcl(origin, gtpose), axis=1)
     for i in range(len(pPose)):
         pose = kitti._get_3x4_tmat(np.array(pPose[i]['tmat']))
         origin = kitti.transform_pcl(origin, pose)
@@ -168,27 +164,29 @@ def evaluate():
         # create map
         gtPosePath = kitti.get_pose_path(modelParams['gTruthDir'], modelParams['seqIDs'][i])
         gtPose = kitti.get_pose_data(gtPosePath)
-        #gtMap = _get_gt_map(gtPose) # w.r.t. Original
+#        gtMap = _get_gt_map(gtPose) # w.r.t. Original
         gtMap = _get_gt_map_seq(gtPose) # w.r.t. sequential
-        #vis_path(gtMap)
+        #vis_path(gtMap, 'GT')
         # Get predictions for a seqID
         # create map
         pPose = _get_prediction(predPoses, modelParams['seqIDs'][i])
         pMap = _get_p_map(pPose) # w.r.t. sequential
-        pMat = _get_p_map_w_orig(pPose, gtPose)
-        vis_path(pMap)
+        pMap = _get_p_map_w_orig(pPose, gtPose)
+#        vis_path(pMap, 'Pred')
         # Visualize both
-        #vis_path_both(gtMap, pMap)
+        vis_path_both(gtMap, pMap)
 
 ################################
 def vis_path_both(gtxyz, pxyz):
     import matplotlib.pyplot as plt
-    plt.plot(gtxyz[0], gtxyz[1], 'r', pxyz[0], pxyz[1], 'b')
+    gt, pred = plt.plot(gtxyz[0], gtxyz[1], 'r', pxyz[0], pxyz[1], 'b')
+    plt.legend([gt, pred], ['GT', 'Pred'])
     plt.show()
 
-def vis_path(xyz):
+def vis_path(xyz, graphType=""):
     import matplotlib.pyplot as plt
-    plt.plot(xyz[0], xyz[1], 'm')
+    graph = plt.plot(xyz[0], xyz[1], 'm')
+    plt.legend([graph], [graphType])
     plt.show()
 
 
