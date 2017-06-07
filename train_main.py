@@ -108,10 +108,9 @@ def train():
 
         # use mask to get degrees significant
         # What about adaptive mask to zoom into differences at each CNN stack !!!
-        loss = model_cnn.weighted_loss(tMatP, tMatT, **modelParams)
-
-        # pcl based
-        #loss = model_cnn.pcl_loss(pclA, tMatP, tMatT, **modelParams)
+        #loss = model_cnn.weighted_loss(tMatP, tMatT, **modelParams)
+        # pcl based loss
+        loss = model_cnn.pcl_loss(pclA, tMatP, tMatT, **modelParams)
 
         # Build a Graph that trains the model with one batch of examples and
         # updates the model parameters.

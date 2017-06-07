@@ -22,6 +22,7 @@ from joblib import Parallel, delayed
 import multiprocessing
 
 import tfrecord_io
+import kitti_shared as kitti
 
 # xyzi[0]/rXYZ out of [-1,1]  this is reveresd
 MIN_X_R = -1
@@ -60,8 +61,7 @@ def odometery_writer(ID,
     imgDepthA, imgDepthB: numpy matrix of size 128x512
     tmatTarget: numpy matrix of size 4x4
     tfRecFolder: folder name
-    '''        Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j) for j in range(0,len(pclFilenames)-1))
-
+    '''
     filename = str(ID[0]) + "_" + str(ID[1]) + "_" + str(ID[2])
     tfrecord_io.tfrecord_writer(ID,
                                 pclA, pclB,
@@ -214,7 +214,6 @@ def get_depth_image_pano_pclView(xyzi, height=1.6):
     #print('0', max(xyzi[0]), min(xyzi[0])) # left/right (-)
     #print('1', max(xyzi[1]), min(xyzi[1])) # up/down (-)
     #print('2', max(xyzi[2]), min(xyzi[2])) # in/out
-    xyzi = np.delete(xyzi, xyzi.shape[0]-1, 0) # remove intensity
     rXYZ = np.linalg.norm(xyzi, axis=0)
     xyzi = xyzi.transpose()
     first = True
@@ -259,7 +258,7 @@ def _get_tMat_A_2_B(tMatA2o, tMatB2o):
 
 def _get_3x4_tmat(poseRow):
     return poseRow.reshape([3,4])
-def _get_pcl(filePath):
+def _get_pcl_XYZ(filePath):
     '''
     Get a bin file address and read it into a numpy matrix
     Converting LiDAR coordinate system to Camera coordinate system for pose transform
@@ -279,7 +278,7 @@ def _get_pcl(filePath):
         if len(xyzi) == 16:
             row = struct.unpack('f'*4, xyzi)
             if j%1 == 0:
-                pclpoints.append([-1*row[1], -1*row[2], row[0], row[3]])
+                pclpoints.append([-1*row[1], -1*row[2], row[0]]) # row[3] is intensity and not used
                 i += 1
         else:
             #print('num pclpoints =', i)
@@ -291,6 +290,8 @@ def _get_pcl(filePath):
     # convert to numpy
     xyzi = np.array(pclpoints, dtype=np.float32)
     return xyzi.transpose()
+
+
 
 def process_dataset(startTime, durationSum, pclFolder, seqID, pclFilenames, poseFile, tfRecFolder, i):
     '''
@@ -307,25 +308,55 @@ def process_dataset(startTime, durationSum, pclFolder, seqID, pclFilenames, pose
     use them to train the network
     '''
     # get i
-    xyzi_A = _get_pcl(pclFolder + pclFilenames[i])
+    xyzi_A = _get_pcl_XYZ(pclFolder + pclFilenames[i])
     pose_Ao = _get_3x4_tmat(poseFile[i])
-    imgDepth_A, xyzi_A = get_depth_image_pano_pclView(xyzi_A)
+    #################
+    #np.set_printoptions(precision=2, suppress=True)
+    #print("orig\n", pose_Ao)
+    #abgxyz = kitti._get_params_from_tmat(pose_Ao)
+    #print("params\n", abgxyz)
+    #pose_AoRec = kitti._get_tmat_from_params(abgxyz)
+    #print("reconstructed:\n", pose)
+    #print("diff\n", pose-pose_Ao)
+    #################
+    imgDepth_A, xyzi_A1 = get_depth_image_pano_pclView(xyzi_A)
     #print(pclFolder + pclFilenames[i])
-    #cv2.imshow('img', imgDepth_A)
-    #cv2.waitKey(1)
+    #cv2.imshow('imgOrig', imgDepth_A)
+    #cv2.waitKey(500)
+    ################# TEST IF RECONSTRUCTED TRANSFORMATION RESULT IS SAME
+    #imgDepth_A, xyzi_A1 = get_depth_image_pano_pclView(kitti.transform_pcl(xyzi_A, pose_Ao))
+    #cv2.imshow('imgT1', imgDepth_A)
+    #cv2.waitKey(500)
+    #imgDepth_A, xyzi_A1 = get_depth_image_pano_pclView(kitti.transform_pcl(xyzi_A, pose_AoRec))
+    #cv2.imshow('imgT2', imgDepth_A)
+    #cv2.waitKey(500)
+    #################
     #return
+
     # get i+1
-    xyzi_B = _get_pcl(pclFolder + pclFilenames[i+1])
+    xyzi_B = _get_pcl_XYZ(pclFolder + pclFilenames[i+1])
     pose_Bo = _get_3x4_tmat(poseFile[i+1])
     imgDepth_B, xyzi_B = get_depth_image_pano_pclView(xyzi_B)
-    # get target pose
-    pose_AB = _get_tMat_A_2_B(pose_Ao, pose_Bo)
+    # get target pose  A->B also changes to abgxyz : get abgxyzb-abgxyza
+#    pose_AB = _get_tMat_A_2_B(pose_Ao, pose_Bo)
+#    np.set_printoptions(precision=4, suppress=True)
+#    print("orig\n", pose_AB)
+    abgxyzA = kitti._get_params_from_tmat(pose_Ao)
+    abgxyzB = kitti._get_params_from_tmat(pose_Bo)
+    abgxyzA2B = abgxyzB-abgxyzA # A->B
+    #print("paramsA\n", abgxyzA)
+    #print("paramsB\n", abgxyzB)
+    #print("paramsB-A\n", abgxyzB-abgxyzA)
+    #abgxyz = kitti._get_params_from_tmat(pose_AB)
+    #print("paramsA->B\n", abgxyz)
+    #return
+
     #
     fileID = [int(seqID), i, i+1]
     odometery_writer(fileID,# 3 ints
                      xyzi_A, xyzi_B,# 3xPCL_COLS
                      imgDepth_A, imgDepth_B,# 128x512
-                     pose_AB,# 3x4
+                     abgxyzA2B,# 6
                      tfRecFolder)
 
 ################################
@@ -420,7 +451,7 @@ def get_max_mins_pclView(xyzi, height=1.6):
 
 def process_maxmins(startTime, durationSum, pclFolder, pclFilenames, poseFile, i):
     # get i
-    xyzi_A = _get_pcl(pclFolder + pclFilenames[i])
+    xyzi_A = _get_pcl_XYZ(pclFolder + pclFilenames[i])
     pose_Ao = _get_correct_tmat(poseFile[i])
     xmin, xmax, ymin, ymax = get_max_mins_pclView(xyzi_A)
     return xmin, xmax, ymin, ymax
@@ -494,7 +525,7 @@ def get_max_pclrows(xyzi, height=1.6):
 
 def process_pclmaxs(startTime, durationSum, pclFolder, pclFilenames, poseFile, i):
     # get i
-    xyzi_A = _get_pcl(pclFolder + pclFilenames[i])
+    xyzi_A = _get_pcl_XYZ(pclFolder + pclFilenames[i])
     pose_Ao = _get_correct_tmat(poseFile[i])
     pclmax = get_max_pclrows(xyzi_A)
     return pclmax

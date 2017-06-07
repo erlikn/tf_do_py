@@ -67,13 +67,13 @@ def parse_example_proto(exampleSerialized, **kwargs):
         image: numpy matrix of 128x512x2
             imgDepthA: numpy matrix of size 128x512
             imgDepthB: numpy matrix of size 128x512
-        tMatTarget: numpy matrix of size 3x4 = 12
+        targetABGXYZ: numpy matrix of size 3x4 = 12
 
         'ID': _int64_feature(IDList),
         'pclA': _float_nparray(pclAList),
         'pclB': _float_nparray(pclBList),
         'image': _bytes_feature(flatImageList)
-        'tMatTarget': _float_nparray(tMatist), # 2D np array
+        'targetABGXYZ': _float_nparray(tMatist), # 2D np array
     """
     """
     KWARGS:
@@ -92,7 +92,7 @@ def parse_example_proto(exampleSerialized, **kwargs):
         'images': tf.FixedLenFeature([], dtype=tf.string),
         'pclA': tf.FixedLenFeature([kwargs.get('pclRows')*kwargs.get('pclCols')], dtype=tf.float32),
         'pclB': tf.FixedLenFeature([kwargs.get('pclRows')*kwargs.get('pclCols')], dtype=tf.float32),
-        'tMatTarget': tf.FixedLenFeature([12], dtype=tf.float32)
+        'targetABGXYZ': tf.FixedLenFeature([6], dtype=tf.float32)
         }
     features = tf.parse_single_example(exampleSerialized, featureMap)
     fileID = features['fileID']
@@ -102,7 +102,7 @@ def parse_example_proto(exampleSerialized, **kwargs):
                                 kwargs.get('imageDepthChannels'))
     pclA = _get_pcl(features['pclA'], kwargs.get('pclRows'), kwargs.get('pclCols'))
     pclB = _get_pcl(features['pclB'], kwargs.get('pclRows'), kwargs.get('pclCols'))
-    tMat = features['tMatTarget']
+    tMat = features['targetABGXYZ']
 
     # PCLs will hold padded [0, 0, 0, 0] points at the end that will be ignored during usage
     # However, they will be kept to unify matrix col size for valid tensor operations 
@@ -111,13 +111,13 @@ def parse_example_proto(exampleSerialized, **kwargs):
 def tfrecord_writer(fileID,
                     pclA, pclB,
                     imgDepthA, imgDepthB,
-                    tMatTarget,
+                    targetABGXYZ,
                     tfRecFolder, tfFileName):
     """
     Converts a dataset to tfrecords
     fileID = seqID, i, i+1
     imgDepthA, imgDepthB => int8 a.k.a. char 128x512
-    tMatTarget => will be converted to float32 with size 3x4 = 12
+    targetABGXYZ => will be converted to float32 with size 6
     pclA, pclB => will be converted to float16 with size 3xPCLCOLS
     """
     tfRecordPath = tfRecFolder + tfFileName + ".tfrecords"
@@ -135,8 +135,7 @@ def tfrecord_writer(fileID,
     pclB = pclB.reshape(pclB.shape[0]*pclB.shape[1]) # 3 x PCL_COLS
     pclBlist = pclB.tolist()
     # Target Transformation
-    tMatTarget = tMatTarget.reshape(tMatTarget.shape[0]*tMatTarget.shape[1]) # 3x4
-    tMatTargetList = tMatTarget.tolist()
+    targetABGXYZList = targetABGXYZ.tolist()
 
     writer = tf.python_io.TFRecordWriter(tfRecordPath)
     example = tf.train.Example(features=tf.train.Features(feature={
@@ -144,7 +143,7 @@ def tfrecord_writer(fileID,
         'images': _bytes_feature(flatImageList),
         'pclA': _float_nparray(pclAlist), # 2D np array
         'pclB': _float_nparray(pclBlist), # 2D np array
-        'tMatTarget': _float_nparray(tMatTargetList) # 2D np array
+        'targetABGXYZ': _float_nparray(targetABGXYZList) # 2D np array
         }))
     writer.write(example.SerializeToString())
     writer.close()

@@ -141,13 +141,13 @@ def _get_p_map_w_orig(pPose, gPose):
     origin = np.array([[0], [0], [0]], dtype=np.float32)
     pathMap = np.ndarray(shape=[3,0], dtype=np.float32)
     pathMap = np.append(pathMap, origin, axis=1)
-    for i in range(len(pPose)):
+    for i in range(len(pPose)-1,-1,-1):
         poseA2B = kitti._get_3x4_tmat(np.array(pPose[i]['tmat']))
         pathMap = kitti.transform_pcl(pathMap, poseA2B)
         pathMap = np.append(pathMap, origin, axis=1)
     #### PathMap consists of all points transformed to the last frame coordinates
     # transform them to origin access
-    pathMap = kitti.transform_pcl(pathMap, gPose[gPose.shape[0]-1])
+    pathMap = kitti.transform_pcl(pathMap, gPose[0])
     # add final origin to the begining
     pathMap = np.append(origin, pathMap, axis=1)
     return pathMap

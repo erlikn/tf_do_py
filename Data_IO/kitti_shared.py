@@ -32,6 +32,49 @@ IMG_COLS = 512
 PCL_COLS = 62074 # All PCL files should have rows
 PCL_ROWS = 3
 
+
+
+############################################################################
+################# TMAT TO/FROM PARAMS
+def _get_params_from_tmat(tmat):
+    """
+    tmat is a 3x4 matrix
+    Output is a 6 valued vector
+
+    For yaw, pitch, roll (alpha, beta, gamma)
+    http://planning.cs.uiuc.edu/node103.html
+    For dX, dY, dZ
+    Last column
+    """
+    dX = tmat[0][3]
+    dY = tmat[1][3]
+    dZ = tmat[2][3]
+    alpha_yaw = np.arctan2(tmat[1][0], tmat[0][0])
+    beta_pitch = np.arctan2(-tmat[2][0], np.sqrt((tmat[2][1]*tmat[2][1]) + (tmat[2][2]+tmat[2][2])))
+    gamma_roll = np.arctan2(tmat[2][1], tmat[2][2])
+    return np.array([alpha_yaw, beta_pitch, gamma_roll, dX, dY, dZ], dtype=np.float32)
+def _get_tmat_from_params(abgxyz):
+    """
+    abgxyz is a 6 valued vector: Alpha_yaw, Beta_pitch, Gamma_roll, DeltaX, DeltaY, DeltaZ
+    Output is a 3x4 tmat
+    For rotation matrix:
+    http://planning.cs.uiuc.edu/node102.html
+    For Translation side:
+    dX, dY, dZ are last column
+    """
+    a = abgxyz[0]
+    b = abgxyz[1]
+    g = abgxyz[2]
+    dx = abgxyz[3]
+    dy = abgxyz[4]
+    dz = abgxyz[5]
+    tmat = np.array([
+              [np.cos(a)*np.cos(b), (np.cos(a)*np.sin(b)*np.sin(g))-(np.sin(a)*np.cos(g)), (np.cos(a)*np.sin(b)*np.cos(g))+(np.sin(a)*np.sin(g)), dx],
+              [np.sin(a)*np.cos(b), (np.sin(a)*np.sin(b)*np.sin(g))+(np.cos(a)*np.cos(g)), (np.sin(a)*np.sin(b)*np.cos(g))-(np.cos(a)*np.sin(g)), dy],
+              [-np.sin(b),          np.cos(b)*np.sin(g),                                   np.cos(b)*np.cos(g),                                   dz]
+           ], dtype=np.float32)
+    return tmat
+
 ############################################################################
 def get_pose_path(poseFolder, seqID):
     return poseFolder + seqID + ".txt"
