@@ -301,6 +301,11 @@ def process_dataset(startTime, durationSum, pclFolder, seqID, pclFilenames, pose
         tMatBo (i+1): B->0
         tMatAB (target): A->B  (i -> i+1) 
     '''
+    '''
+    Calculate the Yaw, Pitch, Roll from Rotation Matrix
+    and extraxt dX, dY, dZ
+    use them to train the network
+    '''
     # get i
     xyzi_A = _get_pcl(pclFolder + pclFilenames[i])
     pose_Ao = _get_3x4_tmat(poseFile[i])
