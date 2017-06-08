@@ -22,26 +22,28 @@ import multiprocessing
 import Data_IO.tfrecord_io as tfrecord_io
 import Data_IO.kitti_shared as kitti
 
-def _apply_prediction(pclA, tMatT, tMatP, **kwargs):
+def _apply_prediction(pclA, targetT, targetP, **kwargs):
     '''
-    Transform pclA, Calculate new tMatT based on tMatP, Create new depth image
+    Transform pclA, Calculate new targetT based on targetP, Create new depth image
     Return:
         - New PCLA
-        - New tMatT
+        - New targetT
         - New depthImage
     '''
     # remove trailing zeros
     pclA = kitti.remove_trailing_zeros(pclA)
-    # get transformed pclA based on tMatP
+    # get transformed pclA based on targetP
+    tMatP = kitti._get_tmat_from_params(targetP) 
     pclATransformed = kitti.transform_pcl(pclA, tMatP)
     # get new depth image of transformed pclA
     depthImageA, _ = kitti.get_depth_image_pano_pclView(pclATransformed)
     pclATransformed = kitti._zero_pad(pclATransformed, kwargs.get('pclCols')-pclATransformed.shape[1])
-    # get residual tMat
-    tMatResA2B = kitti.get_residual_tMat_A2B(tMatT, tMatP)
-    return pclATransformed, tMatResA2B, depthImageA
+    # get residual Target
+    #tMatResA2B = kitti.get_residual_tMat_A2B(targetT, targetP)
+    targetResP2T = targetT - targetP
+    return pclATransformed, targetResP2T, depthImageA
 
-def output(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrecFileIDs, **kwargs):
+def output(batchImages, batchPclA, batchPclB, bargetT, targetP, batchTFrecFileIDs, **kwargs):
     """
     TODO: SIMILAR TO DATA INPUT -> WE NEED A QUEUE RUNNER TO WRITE THIS OFF TO BE FASTER
 
@@ -53,12 +55,12 @@ def output(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrec
       ValueError: If no dataDir
     """
     num_cores = multiprocessing.cpu_count() - 2
-    Parallel(n_jobs=num_cores)(delayed(output_loop)(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrecFileIDs, i, **kwargs) for i in range(kwargs.get('activeBatchSize')))
+    Parallel(n_jobs=num_cores)(delayed(output_loop)(batchImages, batchPclA, batchPclB, bargetT, targetP, batchTFrecFileIDs, i, **kwargs) for i in range(kwargs.get('activeBatchSize')))
     #for i in range(kwargs.get('activeBatchSize')):
-    #    output_loop(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrecFileIDs, **kwargs):
+    #    output_loop(batchImages, batchPclA, batchPclB, bargetT, targetP, batchTFrecFileIDs, **kwargs):
     return
 
-def output_loop(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batchTFrecFileIDs, i, **kwargs):
+def output_loop(batchImages, batchPclA, batchPclB, bargetT, targetP, batchTFrecFileIDs, i, **kwargs):
     """
     TODO: SIMILAR TO DATA INPUT -> WE NEED A QUEUE RUNNER TO WRITE THIS OFF TO BE FASTER
 
@@ -72,19 +74,19 @@ def output_loop(batchImages, batchPclA, batchPclB, batchtMatT, batchtMatP, batch
     # split for depth dimension
     depthA, depthB = np.asarray(np.split(batchImages[i], 2, axis=2))
     depthB = depthB.reshape(kwargs.get('imageDepthRows'), kwargs.get('imageDepthCols'))
-    pclATransformed, tMatRes, depthATransformed = _apply_prediction(batchPclA[i], batchtMatT[i], batchtMatP[i], **kwargs)
+    pclATransformed, targetRes, depthATransformed = _apply_prediction(batchPclA[i], bargetT[i], targetP[i], **kwargs)
     # Write each Tensorflow record
     filename = str(batchTFrecFileIDs[i][0]) + "_" + str(batchTFrecFileIDs[i][1]) + "_" + str(batchTFrecFileIDs[i][2])
     tfrecord_io.tfrecord_writer(batchTFrecFileIDs[i],
                                 pclATransformed, batchPclB[i],
                                 depthATransformed, depthB,
-                                tMatRes,
+                                targetRes,
                                 kwargs.get('warpedOutputFolder')+'/', filename)
     if kwargs.get('phase') == 'train':
-        folderTmat = kwargs.get('tMatTrainDir')
+        folderTmat = kwargs.get('targetTrainDir')
     else:
-        folderTmat = kwargs.get('tMatTestDir')
-    write_predictions(batchTFrecFileIDs[i], batchtMatP[i], folderTmat)
+        folderTmat = kwargs.get('targetTestDir')
+    write_predictions(batchTFrecFileIDs[i], targetP[i], folderTmat)
     return
 
 def write_json_file(filename, datafile):
@@ -97,7 +99,7 @@ def _set_folders(folderPath):
     if not os.path.exists(folderPath):
         os.makedirs(folderPath)
 
-def write_predictions(tfrecID, tmatP, folderOut):
+def write_predictions(tfrecID, targetP, folderOut):
     """
     Write prediction outputs to generate path map
     """
@@ -105,6 +107,6 @@ def write_predictions(tfrecID, tmatP, folderOut):
     dataJson = {'seq' : tfrecID[0].tolist(),
                 'idx' : tfrecID[1].tolist(),
                 'idxNext' : tfrecID[2].tolist(),
-                'tmat' : tmatP.tolist()}
+                'tmat' : targetP.tolist()}
     write_json_file(folderOut + '/' + str(tfrecID[0]) + '_' + str(tfrecID[1]) + '_' + str(tfrecID[2]) +'.json', dataJson)
     return

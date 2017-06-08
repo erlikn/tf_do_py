@@ -89,7 +89,7 @@ def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
       batch_size: Number of images per batch.
     Returns:
       images: Images. 4D tensor of [batch_size, imageDepthRows, imageDepthCols, 2] size.
-      tmat: transformation matrix. 3D tensor of [batch_size, 1, 12=tMatRows*tMatCols] size.
+      target: transformation matrix. 3D tensor of [batch_size, 1, 12=targetRows*targetCols] size.
       pclA: Point Clouds. 3D tensor of [batch_size, pclRows, pclCols]
       pclB: Point Clouds. 3D tensor of [batch_size, pclRows, pclCols]
       tfRecfileID: 3 ints [seqID, frame i, frame i+1]
@@ -175,9 +175,9 @@ def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
         sampleData = []
         for _ in range(numPreprocessThreads):
             # Parse a serialized Example proto to extract the image and metadata.
-            images, pclA, pclB, tMat, tfrecFileIDs = tfrecord_io.parse_example_proto(exampleSerialized, **kwargs)
-            sampleData.append([images, pclA, pclB, tMat, tfrecFileIDs])
-        batchImages, batchPclA, batchPclB, batchTMat, batchTFrecFileIDs = tf.train.batch_join(sampleData,
+            images, pclA, pclB, target, tfrecFileIDs = tfrecord_io.parse_example_proto(exampleSerialized, **kwargs)
+            sampleData.append([images, pclA, pclB, target, tfrecFileIDs])
+        batchImages, batchPclA, batchPclB, batchTarget, batchTFrecFileIDs = tf.train.batch_join(sampleData,
                                                                 batch_size=kwargs.get('activeBatchSize'),
                                                                 capacity=2 * numPreprocessThreads * batchSize)
         batchImages = tf.cast(batchImages, tf.float32)
@@ -185,7 +185,7 @@ def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
         imageA, imageB = tf.split(batchImages, [1, 1], axis=3)
         tf.summary.image('imagesA', imageA)
         tf.summary.image('imagesB', imageB)
-        return batchImages, batchPclA, batchPclB, batchTMat, batchTFrecFileIDs
+        return batchImages, batchPclA, batchPclB, batchTarget, batchTFrecFileIDs
 
 def inputs(**kwargs):
     """Construct input for DeepHomography_CNN evaluation using the Reader ops.
@@ -201,12 +201,12 @@ def inputs(**kwargs):
       ValueError: If no dataDir
     """
     with tf.device('/cpu:0'):
-        batchImages, batchPclA, batchPclB, batchTMatT, batchTFrecFileIDs = fetch_inputs(**kwargs)
+        batchImages, batchPclA, batchPclB, batchTargetT, batchTFrecFileIDs = fetch_inputs(**kwargs)
         
         if kwargs.get('usefp16'):
             batchImages = tf.cast(batchImages, tf.float16)
             batchPclA = tf.cast(batchPclA, tf.float16)
             batchPclB = tf.cast(batchPclB, tf.float16)
-            batchTMatT = tf.cast(batchTMatT, tf.float16)
+            batchTargetT = tf.cast(batchTargetT, tf.float16)
 
-    return batchImages, batchPclA, batchPclB, batchTMatT, batchTFrecFileIDs
+    return batchImages, batchPclA, batchPclB, batchTargetT, batchTFrecFileIDs

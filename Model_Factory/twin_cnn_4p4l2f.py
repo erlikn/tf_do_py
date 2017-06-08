@@ -162,7 +162,19 @@ def weighted_loss(tMatP, tMatT, **kwargs):
     tMatT = tf.multiply(mask, tMatT)
     return model_base.loss(tMatP, tMatT, **kwargs) 
 
-def pcl_loss(pclA, tMatP, tMatT, **kwargs): # batchSize=Sne
+def weighted_params_loss(targetP, targetT, **kwargs):
+    # Alpha, Beta, Gamma are -Pi to Pi periodic radians - mod over pi to remove periodicity
+    mask = np.array([[np.pi, np.pi, np.pi, 1, 1, 1]], dtype=np.float32)
+    mask = np.repeat(mask, kwargs.get('activeBatchSize'), axis=0)
+    targetP = tf.mod(targetP, mask)
+    # Importance weigting on angles as they have smaller values
+    mask = np.array([[1000, 1000, 1000, 1, 1, 1]], dtype=np.float32)
+    mask = np.repeat(mask, kwargs.get('activeBatchSize'), axis=0)
+    targetP = tf.multiply(mask, targetP)
+    targetT = tf.multiply(mask, targetT)
+    return model_base.loss(targetP, targetT, **kwargs) 
+
+def pcl_params_loss(pclA, tMatP, tMatT, **kwargs): # batchSize=Sne
     """
     Generate a ground truth point cloud using ground truth transformation
     Generate a prediction point cloud using predicted transformation

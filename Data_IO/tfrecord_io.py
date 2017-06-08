@@ -73,7 +73,7 @@ def parse_example_proto(exampleSerialized, **kwargs):
         'pclA': _float_nparray(pclAList),
         'pclB': _float_nparray(pclBList),
         'image': _bytes_feature(flatImageList)
-        'targetABGXYZ': _float_nparray(tMatist), # 2D np array
+        'targetABGXYZ': _float_nparray(targetList), # 2D np array
     """
     """
     KWARGS:
@@ -84,8 +84,7 @@ def parse_example_proto(exampleSerialized, **kwargs):
         pclRows = 3
         pclCols = 62074
 
-        tMatRows = 3
-        tMatCols = 4
+        targetABGXYZ = 6
     """
     featureMap = {
         'fileID': tf.FixedLenFeature([3], dtype=tf.int64),
@@ -102,11 +101,11 @@ def parse_example_proto(exampleSerialized, **kwargs):
                                 kwargs.get('imageDepthChannels'))
     pclA = _get_pcl(features['pclA'], kwargs.get('pclRows'), kwargs.get('pclCols'))
     pclB = _get_pcl(features['pclB'], kwargs.get('pclRows'), kwargs.get('pclCols'))
-    tMat = features['targetABGXYZ']
+    target = features['targetABGXYZ']
 
     # PCLs will hold padded [0, 0, 0, 0] points at the end that will be ignored during usage
     # However, they will be kept to unify matrix col size for valid tensor operations 
-    return images, pclA, pclB, tMat, fileID
+    return images, pclA, pclB, target, fileID
 
 def tfrecord_writer(fileID,
                     pclA, pclB,
