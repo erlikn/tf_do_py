@@ -184,7 +184,7 @@ def pcl_loss(pclA, tMatP, tMatT, **kwargs): # batchSize=Sne
     # tMatP, tMatT should get a 0,0,0,1 row and be reshaped to 4x4
     tMatP = tf.concat([tMatP, tf.constant(np.repeat(np.array([[0, 0, 0, 1]],
                                                              dtype=np.float32),
-                                                    kwargs.get('activeBatchSize'),
+                                                    2,
                                                     axis=0))],
                       1)
     tMatT = tf.concat([tMatT, tf.constant(np.repeat(np.array([[0, 0, 0, 1]],
@@ -215,8 +215,31 @@ def pcl_params_loss(pclA, pred, target, **kwargs): # batchSize=Sne
     pred = tf.transpose(pred)
     target = tf.transpose(target)
     # generate tMatP and tMatT: 12 x batchSize
-
+    a = pred[0]
+    b = pred[1]
+    g = pred[2]
+    dx = pred[3]
+    dy = pred[4]
+    dz = pred[5]
+    tMatP = tf.Variable([
+              tf.cos(a)*tf.cos(b), (tf.cos(a)*tf.sin(b)*tf.sin(g))-(tf.sin(a)*tf.cos(g)), (tf.cos(a)*tf.sin(b)*tf.cos(g))+(tf.sin(a)*tf.sin(g)), dx,
+              tf.sin(a)*tf.cos(b), (tf.sin(a)*tf.sin(b)*tf.sin(g))+(tf.cos(a)*tf.cos(g)), (tf.sin(a)*tf.sin(b)*tf.cos(g))-(tf.cos(a)*tf.sin(g)), dy,
+              -tf.sin(b),          tf.cos(b)*tf.sin(g),                                   tf.cos(b)*tf.cos(g),                                   dz
+           ], trainable=False, dtype=tf.float32, name='tMatP')
+    a = target[0]
+    b = target[1]
+    g = target[2]
+    dx = target[3]
+    dy = target[4]
+    dz = target[5]
+    tMatT = tf.Variable([
+              tf.cos(a)*tf.cos(b), (tf.cos(a)*tf.sin(b)*tf.sin(g))-(tf.sin(a)*tf.cos(g)), (tf.cos(a)*tf.sin(b)*tf.cos(g))+(tf.sin(a)*tf.sin(g)), dx,
+              tf.sin(a)*tf.cos(b), (tf.sin(a)*tf.sin(b)*tf.sin(g))+(tf.cos(a)*tf.cos(g)), (tf.sin(a)*tf.sin(b)*tf.cos(g))-(tf.cos(a)*tf.sin(g)), dy,
+              -tf.sin(b),          tf.cos(b)*tf.sin(g),                                   tf.cos(b)*tf.cos(g),                                   dz
+           ], trainable=False, dtype=tf.float32, name='tMatT')
     # convert tMat's to correct form: 12 x batchSize -> batchSize x 12
+    tMatP = tf.transpose(tMatP)
+    tMatT = tf.transpose(tMatT)
     return pcl_loss(pclA, tMatP, tMatT, **kwargs)
 
 def train(loss, globalStep, **kwargs):
