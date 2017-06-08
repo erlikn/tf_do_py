@@ -174,7 +174,7 @@ def weighted_params_loss(targetP, targetT, **kwargs):
     targetT = tf.multiply(mask, targetT)
     return model_base.loss(targetP, targetT, **kwargs) 
 
-def pcl_params_loss(pclA, tMatP, tMatT, **kwargs): # batchSize=Sne
+def pcl_loss(pclA, tMatP, tMatT, **kwargs): # batchSize=Sne
     """
     Generate a ground truth point cloud using ground truth transformation
     Generate a prediction point cloud using predicted transformation
@@ -201,6 +201,23 @@ def pcl_params_loss(pclA, tMatP, tMatT, **kwargs): # batchSize=Sne
     pclP = tf.matmul(tMatP, pclA)
     pclT = tf.matmul(tMatT, pclA)
     return model_base.loss(pclP, pclT, **kwargs)
+
+def pcl_params_loss(pclA, pred, target, **kwargs): # batchSize=Sne
+    """
+    Generate transformation matrix using parameters for both prediction and ground truth
+    Generate a ground truth point cloud using ground truth transformation
+    Generate a prediction point cloud using predicted transformation
+    L2 difference between ground truth and predicted point cloud is the loss value
+    """
+    # pclA, tMatP, tMatT are in batches
+    # tMatP, tMatT should get a 0,0,0,1 row and be reshaped to 4x4
+    # transpose to easily extract columns: batchSize x 6 -> 6 x batchSize
+    pred = tf.transpose(pred)
+    target = tf.transpose(target)
+    # generate tMatP and tMatT: 12 x batchSize
+
+    # convert tMat's to correct form: 12 x batchSize -> batchSize x 12
+    return pcl_loss(pclA, tMatP, tMatT, **kwargs)
 
 def train(loss, globalStep, **kwargs):
     return model_base.train(loss, globalStep, **kwargs)

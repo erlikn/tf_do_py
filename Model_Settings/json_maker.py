@@ -82,8 +82,8 @@ data = {
     'warpedTestDataDir' : warpedTestDirBase+'',
     'trainLogDir' : trainLogDirBase+'',
     'testLogDir' : testLogDirBase+'',
-    'tMatTrainDir' : trainLogDirBase+'/tmat',
-    'tMatTestDir' : testLogDirBase+'/tmat',
+    'tMatTrainDir' : trainLogDirBase+'/target',
+    'tMatTestDir' : testLogDirBase+'/target',
     'writeWarped' : False,
     'pretrainedModelCheckpointPath' : '',
     # Image Parameters
@@ -450,8 +450,8 @@ def write_iterative():
         data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
-        data['tMatTrainDir'] = data['trainLogDir']+'/tmat'
-        data['tMatTestDir'] = data['testLogDir']+'/tmat'
+        data['tMatTrainDir'] = data['trainLogDir']+'/target'
+        data['tMatTestDir'] = data['testLogDir']+'/target'
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
         data['warpOriginalImage'] = True
@@ -469,8 +469,8 @@ def write_iterative():
         data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
-        data['tMatTrainDir'] = data['trainLogDir']+'/tmat'
-        data['tMatTestDir'] = data['testLogDir']+'/tmat'
+        data['tMatTrainDir'] = data['trainLogDir']+'/target'
+        data['tMatTestDir'] = data['testLogDir']+'/target'
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
         data['modelShape'] = [64, 64, 64, 64, 128, 128, 128, 128, 1024]
@@ -487,8 +487,8 @@ def write_iterative():
         data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
-        data['tMatTrainDir'] = data['trainLogDir']+'/tmat'
-        data['tMatTestDir'] = data['testLogDir']+'/tmat'
+        data['tMatTrainDir'] = data['trainLogDir']+'/target'
+        data['tMatTestDir'] = data['testLogDir']+'/target'
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
         data['modelShape'] = [64, 64, 64, 64, 128, 128, 128, 128, 1024]
@@ -505,8 +505,8 @@ def write_iterative():
         data['warpedTestDataDir'] = warpedTestDirBase+ runName
         _set_folders(data['warpedTrainDataDir'])
         _set_folders(data['warpedTestDataDir'])
-        data['tMatTrainDir'] = data['trainLogDir']+'/tmat'
-        data['tMatTestDir'] = data['testLogDir']+'/tmat'
+        data['tMatTrainDir'] = data['trainLogDir']+'/target'
+        data['tMatTestDir'] = data['testLogDir']+'/target'
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
         data['modelShape'] = [64, 64, 64, 64, 128, 128, 128, 128, 1024]
