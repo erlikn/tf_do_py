@@ -50,7 +50,7 @@ def _get_params_from_tmat(tmat):
     dY = tmat[1][3]
     dZ = tmat[2][3]
     alpha_yaw = np.arctan2(tmat[1][0], tmat[0][0])
-    beta_pitch = np.arctan2(-tmat[2][0], np.sqrt((tmat[2][1]*tmat[2][1]) + (tmat[2][2]+tmat[2][2])))
+    beta_pitch = np.arctan2(-tmat[2][0], np.sqrt((tmat[2][1]*tmat[2][1])+(tmat[2][2]*tmat[2][2])))
     gamma_roll = np.arctan2(tmat[2][1], tmat[2][2])
     return np.array([alpha_yaw, beta_pitch, gamma_roll, dX, dY, dZ], dtype=np.float32)
 def _get_tmat_from_params(abgxyz):

@@ -167,6 +167,7 @@ def weighted_params_loss(targetP, targetT, **kwargs):
     mask = np.array([[np.pi, np.pi, np.pi, 1, 1, 1]], dtype=np.float32)
     mask = np.repeat(mask, kwargs.get('activeBatchSize'), axis=0)
     targetP = tf.mod(targetP, mask)
+    targetT = tf.mod(targetT, mask)
     # Importance weigting on angles as they have smaller values
     mask = np.array([[1000, 1000, 1000, 1, 1, 1]], dtype=np.float32)
     mask = np.repeat(mask, kwargs.get('activeBatchSize'), axis=0)
@@ -184,7 +185,7 @@ def pcl_loss(pclA, tMatP, tMatT, **kwargs): # batchSize=Sne
     # tMatP, tMatT should get a 0,0,0,1 row and be reshaped to 4x4
     tMatP = tf.concat([tMatP, tf.constant(np.repeat(np.array([[0, 0, 0, 1]],
                                                              dtype=np.float32),
-                                                    2,
+                                                    kwargs.get('activeBatchSize'),
                                                     axis=0))],
                       1)
     tMatT = tf.concat([tMatT, tf.constant(np.repeat(np.array([[0, 0, 0, 1]],
@@ -226,6 +227,11 @@ def pcl_params_loss(pclA, pred, target, **kwargs): # batchSize=Sne
               tf.sin(a)*tf.cos(b), (tf.sin(a)*tf.sin(b)*tf.sin(g))+(tf.cos(a)*tf.cos(g)), (tf.sin(a)*tf.sin(b)*tf.cos(g))-(tf.cos(a)*tf.sin(g)), dy,
               -tf.sin(b),          tf.cos(b)*tf.sin(g),                                   tf.cos(b)*tf.cos(g),                                   dz
            ], trainable=False, dtype=tf.float32, name='tMatP')
+    tMatP = tf.constant([
+          tf.cos(a)*tf.cos(b), (tf.cos(a)*tf.sin(b)*tf.sin(g))-(tf.sin(a)*tf.cos(g)), (tf.cos(a)*tf.sin(b)*tf.cos(g))+(tf.sin(a)*tf.sin(g)), dx,
+          tf.sin(a)*tf.cos(b), (tf.sin(a)*tf.sin(b)*tf.sin(g))+(tf.cos(a)*tf.cos(g)), (tf.sin(a)*tf.sin(b)*tf.cos(g))-(tf.cos(a)*tf.sin(g)), dy,
+          -tf.sin(b),          tf.cos(b)*tf.sin(g),                                   tf.cos(b)*tf.cos(g),                                   dz
+       ], trainable=False, dtype=tf.float32, name='tMatP')
     a = target[0]
     b = target[1]
     g = target[2]
