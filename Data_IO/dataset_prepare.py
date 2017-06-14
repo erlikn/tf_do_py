@@ -13,7 +13,6 @@ from shutil import copy
 import numpy as np
 import matplotlib.pyplot as plt
 import csv
-import tensorflow as tf
 
 import struct
 from scipy import spatial
@@ -68,7 +67,7 @@ def odometery_writer(ID,
                                 imgDepthA, imgDepthB,
                                 tMatTarget,
                                 tfRecFolder, filename)
-    return #len(ID), pclA.shape, pclB.shape, imgDepthA.shape, imgDepthB.shape, tMatTarget.shape
+    return len(ID), pclA.shape, pclB.shape, imgDepthA.shape, imgDepthB.shape, tMatTarget.shape
 ##################################
 def _zero_pad(xyzi, num):
     '''
@@ -353,17 +352,17 @@ def process_dataset(startTime, durationSum, pclFolder, seqID, pclFilenames, pose
 
     #
     fileID = [int(seqID), i, i+1]
-    odometery_writer(fileID,# 3 ints
-                     xyzi_A, xyzi_B,# 3xPCL_COLS
-                     imgDepth_A, imgDepth_B,# 128x512
-                     abgxyzA2B,# 6
-                     tfRecFolder)
-    #IDshape, pclAshape, pclBshape, imgDAshape, imgDBshape, targetShape = odometery_writer(fileID,# 3 ints
+    #odometery_writer(fileID,# 3 ints
     #                 xyzi_A, xyzi_B,# 3xPCL_COLS
     #                 imgDepth_A, imgDepth_B,# 128x512
     #                 abgxyzA2B,# 6
     #                 tfRecFolder)
-    return #IDshape, pclAshape, pclBshape, imgDAshape, imgDBshape, targetShape
+    shapes = odometery_writer(fileID,# 3 ints
+                     xyzi_A, xyzi_B,# 3xPCL_COLS
+                     imgDepth_A, imgDepth_B,# 128x512
+                     abgxyzA2B,# 6
+                     tfRecFolder)
+    return shapes
 ################################
 def _get_pose_data(posePath):
     return np.loadtxt(open(posePath, "r"), delimiter=" ")
@@ -389,9 +388,12 @@ def prepare_dataset(datasetType, pclFolder, poseFolder, seqIDs, tfRecFolder):
         startTime = time.time()
         num_cores = multiprocessing.cpu_count() - 2
         #for j in range(0,len(pclFilenames)-1):
-        #    IDshape, pclAshape, pclBshape, imgDAshape, imgDBshape, targetShape = process_dataset(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j)
-        #    print(IDshape, pclAshape, pclBshape, imgDAshape, imgDBshape, targetShape)
-        Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j) for j in range(0,len(pclFilenames)-1))
+        #    shapes = process_dataset(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j)
+        #    print(shapes)
+        shapes = Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j) for j in range(0,len(pclFilenames)-1))
+    for i in range(0,len(pclFilenames)-1):
+        print(shapes[i])
+        
     print('Done')
 
 ################################
@@ -553,10 +555,15 @@ def find_max_PCL(datasetType, pclFolder, poseFolder, seqIDs):
     print('Done')
 
 ############# PATHS
+import os
+def _set_folders(folderPath):
+    if not os.path.exists(folderPath):
+        os.makedirs(folderPath)
+
 pclPath = '../Data/kitti/pointcloud/'
 posePath = '../Data/kitti/poses/'
-seqIDtrain = ['00', '01', '02', '03', '04', '05', '06', '07', '08']
-seqIDtest = ['09', '10']
+seqIDtrain = ['00']#, '01', '02', '03', '04', '05', '06', '07', '08']
+#seqIDtest = ['09', '10']
 
 traintfRecordFLD = "../Data/kitti/train_tfrecords/"
 testtfRecordFLD = "../Data/kitti/test_tfrecords/"
@@ -579,6 +586,8 @@ To have all point clouds within same dimensions, we should add extra 0 rows to h
 #find_max_PCL("train", pclPath, posePath, seqIDtrain)
 #find_max_PCL("test", pclPath, posePath, seqIDtest)
 
+_set_folders(traintfRecordFLD)
+_set_folders(testtfRecordFLD)
 
 prepare_dataset("train", pclPath, posePath, seqIDtrain, traintfRecordFLD)
-prepare_dataset("test", pclPath, posePath, seqIDtest, testtfRecordFLD)
+#prepare_dataset("test", pclPath, posePath, seqIDtest, testtfRecordFLD)
