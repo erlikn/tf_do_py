@@ -53,7 +53,7 @@ tf.app.flags.DEFINE_integer('numPreprocessThreads', 4,
                             """Number of preprocessing threads per tower. """
                             """Please make this a multiple of 4.""")
 
-tf.app.flags.DEFINE_integer('numReaders', 4,
+tf.app.flags.DEFINE_integer('numReaders', 2,
                             """Number of parallel readers during train.""")
 
 # Images are preprocessed asynchronously using multiple threads specified by
@@ -66,7 +66,7 @@ tf.app.flags.DEFINE_integer('numReaders', 4,
 # of 1024*16 images. Assuming RGB 299x299 images, this implies a queue size of
 # 16GB. If the machine is memory limited, then decrease this factor to
 # decrease the CPU memory footprint, accordingly.
-tf.app.flags.DEFINE_integer('inputQueueMemoryFactor', 8,
+tf.app.flags.DEFINE_integer('inputQueueMemoryFactor', 2,
                             """Size of the queue of preprocessed images. """
                             """Default is ideal but try smaller values, e.g. """
                             """4, 2 or 1, if host memory is constrained. See """
@@ -101,7 +101,6 @@ def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
         # get dataset filenames
         filenames = glob.glob(os.path.join(dataDir, "*.tfrecords"))
         # read parameters
-        print(filenames)
         ph = kwargs.get('phase')
         if filenames is None or len(filenames) == 0:
             raise ValueError("No filenames found for stage: %s" % ph)
@@ -179,7 +178,11 @@ def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
             # Parse a serialized Example proto to extract the image and metadata.
             images, pclA, pclB, target, tfrecFileIDs = tfrecord_io.parse_example_proto(exampleSerialized, **kwargs)
             sampleData.append([images, pclA, pclB, target, tfrecFileIDs])
-
+            #print(images.get_shape())
+            #print(pclA.get_shape())
+            #print(pclB.get_shape())
+            #print(tfrecFileIDs.get_shape())
+        #print(len(sampleData))
         batchImages, batchPclA, batchPclB, batchTarget, batchTFrecFileIDs = tf.train.batch_join(sampleData,
                                                                     batch_size=kwargs.get('activeBatchSize'),
                                                                     capacity=2*numPreprocessThreads*kwargs.get('activeBatchSize'))
