@@ -110,7 +110,7 @@ def train():
         # What about adaptive mask to zoom into differences at each CNN stack !!!
         #loss = model_cnn.weighted_loss(targetP, targetT, **modelParams)
         # pcl based loss
-        loss = model_cnn.pcl_loss(pclA, targetP, targetT, **modelParams)
+        loss = model_cnn.pcl_params_loss(pclA, targetP, targetT, **modelParams)
 
         # Build a Graph that trains the model with one batch of examples and
         # updates the model parameters.
@@ -227,9 +227,14 @@ def main(argv=None):  # pylint: disable=unused-argumDt
     #print('Test  Logs Output: %s' % modelParams['testLogDir'])
     print('Train Warp Output: %s' % modelParams['warpedTrainDataDir'])
     #print('Test  Warp Output: %s' % modelParams['warpedTestDataDir'])
-    if input("(Overwrite WARNING) Did you change logs directory? ") != "yes":
-        print("Please consider changing logs directory in order to avoid overwrite!")
-        return
+    print('')
+    print('')
+    print('')
+    print('')
+    print('')
+    #if input("(Overwrite WARNING) Did you change logs directory? ") != "yes":
+    #    print("Please consider changing logs directory in order to avoid overwrite!")
+    #    return
     if tf.gfile.Exists(modelParams['trainLogDir']):
         tf.gfile.DeleteRecursively(modelParams['trainLogDir'])
     tf.gfile.MakeDirs(modelParams['trainLogDir'])

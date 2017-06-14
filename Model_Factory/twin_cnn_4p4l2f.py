@@ -226,12 +226,7 @@ def pcl_params_loss(pclA, pred, target, **kwargs): # batchSize=Sne
               tf.cos(a)*tf.cos(b), (tf.cos(a)*tf.sin(b)*tf.sin(g))-(tf.sin(a)*tf.cos(g)), (tf.cos(a)*tf.sin(b)*tf.cos(g))+(tf.sin(a)*tf.sin(g)), dx,
               tf.sin(a)*tf.cos(b), (tf.sin(a)*tf.sin(b)*tf.sin(g))+(tf.cos(a)*tf.cos(g)), (tf.sin(a)*tf.sin(b)*tf.cos(g))-(tf.cos(a)*tf.sin(g)), dy,
               -tf.sin(b),          tf.cos(b)*tf.sin(g),                                   tf.cos(b)*tf.cos(g),                                   dz
-           ], trainable=False, dtype=tf.float32, name='tMatP')
-    tMatP = tf.constant([
-          tf.cos(a)*tf.cos(b), (tf.cos(a)*tf.sin(b)*tf.sin(g))-(tf.sin(a)*tf.cos(g)), (tf.cos(a)*tf.sin(b)*tf.cos(g))+(tf.sin(a)*tf.sin(g)), dx,
-          tf.sin(a)*tf.cos(b), (tf.sin(a)*tf.sin(b)*tf.sin(g))+(tf.cos(a)*tf.cos(g)), (tf.sin(a)*tf.sin(b)*tf.cos(g))-(tf.cos(a)*tf.sin(g)), dy,
-          -tf.sin(b),          tf.cos(b)*tf.sin(g),                                   tf.cos(b)*tf.cos(g),                                   dz
-       ], trainable=False, dtype=tf.float32, name='tMatP')
+           ], dtype=tf.float32, name='tMatP')
     a = target[0]
     b = target[1]
     g = target[2]
@@ -242,7 +237,7 @@ def pcl_params_loss(pclA, pred, target, **kwargs): # batchSize=Sne
               tf.cos(a)*tf.cos(b), (tf.cos(a)*tf.sin(b)*tf.sin(g))-(tf.sin(a)*tf.cos(g)), (tf.cos(a)*tf.sin(b)*tf.cos(g))+(tf.sin(a)*tf.sin(g)), dx,
               tf.sin(a)*tf.cos(b), (tf.sin(a)*tf.sin(b)*tf.sin(g))+(tf.cos(a)*tf.cos(g)), (tf.sin(a)*tf.sin(b)*tf.cos(g))-(tf.cos(a)*tf.sin(g)), dy,
               -tf.sin(b),          tf.cos(b)*tf.sin(g),                                   tf.cos(b)*tf.cos(g),                                   dz
-           ], trainable=False, dtype=tf.float32, name='tMatT')
+           ], dtype=tf.float32, name='tMatT')
     # convert tMat's to correct form: 12 x batchSize -> batchSize x 12
     tMatP = tf.transpose(tMatP)
     tMatT = tf.transpose(tMatT)

@@ -68,7 +68,7 @@ def odometery_writer(ID,
                                 imgDepthA, imgDepthB,
                                 tMatTarget,
                                 tfRecFolder, filename)
-    return
+    return #len(ID), pclA.shape, pclB.shape, imgDepthA.shape, imgDepthB.shape, tMatTarget.shape
 ##################################
 def _zero_pad(xyzi, num):
     '''
@@ -319,15 +319,15 @@ def process_dataset(startTime, durationSum, pclFolder, seqID, pclFilenames, pose
     #print("reconstructed:\n", pose)
     #print("diff\n", pose-pose_Ao)
     #################
-    imgDepth_A, xyzi_A1 = get_depth_image_pano_pclView(xyzi_A)
+    imgDepth_A, xyzi_A = get_depth_image_pano_pclView(xyzi_A)
     #print(pclFolder + pclFilenames[i])
     #cv2.imshow('imgOrig', imgDepth_A)
     #cv2.waitKey(500)
     ################# TEST IF RECONSTRUCTED TRANSFORMATION RESULT IS SAME
-    #imgDepth_A, xyzi_A1 = get_depth_image_pano_pclView(kitti.transform_pcl(xyzi_A, pose_Ao))
+    #imgDepth_A, xyzi_A = get_depth_image_pano_pclView(kitti.transform_pcl(xyzi_A, pose_Ao))
     #cv2.imshow('imgT1', imgDepth_A)
     #cv2.waitKey(500)
-    #imgDepth_A, xyzi_A1 = get_depth_image_pano_pclView(kitti.transform_pcl(xyzi_A, pose_AoRec))
+    #imgDepth_A, xyzi_A = get_depth_image_pano_pclView(kitti.transform_pcl(xyzi_A, pose_AoRec))
     #cv2.imshow('imgT2', imgDepth_A)
     #cv2.waitKey(500)
     #################
@@ -358,7 +358,12 @@ def process_dataset(startTime, durationSum, pclFolder, seqID, pclFilenames, pose
                      imgDepth_A, imgDepth_B,# 128x512
                      abgxyzA2B,# 6
                      tfRecFolder)
-
+    #IDshape, pclAshape, pclBshape, imgDAshape, imgDBshape, targetShape = odometery_writer(fileID,# 3 ints
+    #                 xyzi_A, xyzi_B,# 3xPCL_COLS
+    #                 imgDepth_A, imgDepth_B,# 128x512
+    #                 abgxyzA2B,# 6
+    #                 tfRecFolder)
+    return #IDshape, pclAshape, pclBshape, imgDAshape, imgDBshape, targetShape
 ################################
 def _get_pose_data(posePath):
     return np.loadtxt(open(posePath, "r"), delimiter=" ")
@@ -384,7 +389,8 @@ def prepare_dataset(datasetType, pclFolder, poseFolder, seqIDs, tfRecFolder):
         startTime = time.time()
         num_cores = multiprocessing.cpu_count() - 2
         #for j in range(0,len(pclFilenames)-1):
-        #    process_dataset(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j)
+        #    IDshape, pclAshape, pclBshape, imgDAshape, imgDBshape, targetShape = process_dataset(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j)
+        #    print(IDshape, pclAshape, pclBshape, imgDAshape, imgDBshape, targetShape)
         Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j) for j in range(0,len(pclFilenames)-1))
     print('Done')
 
