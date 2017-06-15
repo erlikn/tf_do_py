@@ -17,8 +17,8 @@ import Data_IO.tfrecord_io as tfrecord_io
 
 
 # 32 batches (64 smaples per batch) = 2048 samples in a shard
-TRAIN_SHARD_SIZE = 32*64
-TEST_SHARD_SIZE = 32*64
+TRAIN_SHARD_SIZE = 2*2
+TEST_SHARD_SIZE = 2*2
 #190 shard files with (2048 samples per shard)
 CHNAGE_TO_TOTAL_FILE_NUMBER = 20400
 NUMBER_OF_SHARDS = (CHNAGE_TO_TOTAL_FILE_NUMBER//TRAIN_SHARD_SIZE)+1 
@@ -178,11 +178,11 @@ def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
             # Parse a serialized Example proto to extract the image and metadata.
             images, pclA, pclB, target, tfrecFileIDs = tfrecord_io.parse_example_proto(exampleSerialized, **kwargs)
             sampleData.append([images, pclA, pclB, target, tfrecFileIDs])
-            #print(images.get_shape())
-            #print(pclA.get_shape())
-            #print(pclB.get_shape())
-            #print(tfrecFileIDs.get_shape())
-        #print(len(sampleData))
+            print(images.get_shape())
+            print(pclA.get_shape())
+            print(pclB.get_shape())
+            print(tfrecFileIDs.get_shape())
+        print(len(sampleData))
         batchImages, batchPclA, batchPclB, batchTarget, batchTFrecFileIDs = tf.train.batch_join(sampleData,
                                                                     batch_size=kwargs.get('activeBatchSize'),
                                                                     capacity=2*numPreprocessThreads*kwargs.get('activeBatchSize'))
@@ -207,6 +207,7 @@ def inputs(**kwargs):
       ValueError: If no dataDir
     """
     with tf.device('/cpu:0'):
+        print('fetch')
         batchImages, batchPclA, batchPclB, batchTargetT, batchTFrecFileIDs = fetch_inputs(**kwargs)
         
         if kwargs.get('usefp16'):
@@ -214,5 +215,5 @@ def inputs(**kwargs):
             batchPclA = tf.cast(batchPclA, tf.float16)
             batchPclB = tf.cast(batchPclB, tf.float16)
             batchTargetT = tf.cast(batchTargetT, tf.float16)
-
+        print('returning')
     return batchImages, batchPclA, batchPclB, batchTargetT, batchTFrecFileIDs

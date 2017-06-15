@@ -47,7 +47,7 @@ USE_FP_16 = False
 TOWER_NAME = 'tower'
 
 def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13], existingParams=[]
-
+    print('inference')
     modelShape = kwargs.get('modelShape')
     wd = None #0.0002
     USE_FP_16 = kwargs.get('usefp16')
@@ -140,7 +140,7 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
     fireOut, prevExpandDim = model_base.fc_regression_module('fc2', fireOut, prevExpandDim,
                                                              {'fc': kwargs.get('outputSize')},
                                                              wd, **kwargs)
-
+    print('infrenece complete')
     return fireOut
 
 def loss(pred, target, **kwargs): # batchSize=Sne
@@ -210,6 +210,7 @@ def pcl_params_loss(pclA, pred, target, **kwargs): # batchSize=Sne
     Generate a prediction point cloud using predicted transformation
     L2 difference between ground truth and predicted point cloud is the loss value
     """
+    print('paramsLoss')
     # pclA, tMatP, tMatT are in batches
     # tMatP, tMatT should get a 0,0,0,1 row and be reshaped to 4x4
     # transpose to easily extract columns: batchSize x 6 -> 6 x batchSize
@@ -241,6 +242,8 @@ def pcl_params_loss(pclA, pred, target, **kwargs): # batchSize=Sne
     # convert tMat's to correct form: 12 x batchSize -> batchSize x 12
     tMatP = tf.transpose(tMatP)
     tMatT = tf.transpose(tMatT)
+    print('paramsLossDone')
+
     return pcl_loss(pclA, tMatP, tMatT, **kwargs)
 
 def train(loss, globalStep, **kwargs):

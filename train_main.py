@@ -52,15 +52,15 @@ model_cnn = importlib.import_module('Model_Factory.'+modelParams['modelName'])
 
 ####################################################
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_integer('printOutStep', 10,
+tf.app.flags.DEFINE_integer('printOutStep', 1,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('summaryWriteStep', 100,
+tf.app.flags.DEFINE_integer('summaryWriteStep', 1,
                             """Number of batches to run.""")
 tf.app.flags.DEFINE_integer('modelCheckpointStep', 1000,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('ProgressStepReportStep', 250,
+tf.app.flags.DEFINE_integer('ProgressStepReportStep', 2,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('ProgressStepReportOutputWrite', 25,
+tf.app.flags.DEFINE_integer('ProgressStepReportOutputWrite', 2,
                             """Number of batches to run.""")
 ####################################################
 def _get_control_params():
@@ -116,12 +116,14 @@ def train():
         # updates the model parameters.
         opTrain = model_cnn.train(loss, globalStep, **modelParams)
         ##############################
-
+        print('trainDone -- MAIN')
         # Create a saver.
         saver = tf.train.Saver(tf.global_variables())
+        print('SAVER -- MAIN')
 
         # Build the summary operation based on the TF collection of Summaries.
         summaryOp = tf.summary.merge_all()
+        print('MERGESUMMARY -- MAIN')
 
         # Build an initialization operation to run below.
         #init = tf.initialize_all_variables()
@@ -132,13 +134,17 @@ def train():
         config = tf.ConfigProto(log_device_placement=modelParams['logDevicePlacement'])
         config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
         sess = tf.Session(config=config)
+        print('SESSION -- MAIN')
+
 
         #sess = tf_debug.LocalCLIDebugWrapperSession(sess)
         #sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
         sess.run(init)
+        print('INIT -- MAIN')
 
         # Start the queue runners.
         tf.train.start_queue_runners(sess=sess)
+        print('QUEUERUNNER -- MAIN')
 
         summaryWriter = tf.summary.FileWriter(modelParams['trainLogDir'], sess.graph)
 
@@ -148,6 +154,7 @@ def train():
             startTime = time.time()
             _, lossValue = sess.run([opTrain, loss])
             duration = time.time() - startTime
+            print(lossValue)
             durationSum += duration
             assert not np.isnan(lossValue), 'Model diverged with loss = NaN'
 

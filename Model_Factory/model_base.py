@@ -620,7 +620,6 @@ def train(loss, globalStep, **kwargs):
     
     with tf.control_dependencies([opApplyGradients]):
         opTrain = tf.no_op(name='train')
-
     return opTrain
 
 def test(loss, globalStep, **kwargs):
