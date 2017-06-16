@@ -47,7 +47,6 @@ USE_FP_16 = False
 TOWER_NAME = 'tower'
 
 def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13], existingParams=[]
-    print('inference')
     modelShape = kwargs.get('modelShape')
     wd = None #0.0002
     USE_FP_16 = kwargs.get('usefp16')
@@ -140,7 +139,6 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
     fireOut, prevExpandDim = model_base.fc_regression_module('fc2', fireOut, prevExpandDim,
                                                              {'fc': kwargs.get('outputSize')},
                                                              wd, **kwargs)
-    print('infrenece complete')
     return fireOut
 
 def loss(pred, target, **kwargs): # batchSize=Sne
@@ -164,15 +162,15 @@ def weighted_loss(tMatP, tMatT, **kwargs):
 
 def weighted_params_loss(targetP, targetT, **kwargs):
     # Alpha, Beta, Gamma are -Pi to Pi periodic radians - mod over pi to remove periodicity
-    mask = np.array([[np.pi, np.pi, np.pi, 1, 1, 1]], dtype=np.float32)
-    mask = np.repeat(mask, kwargs.get('activeBatchSize'), axis=0)
-    targetP = tf.mod(targetP, mask)
-    targetT = tf.mod(targetT, mask)
+    #mask = np.array([[np.pi, np.pi, np.pi, 1, 1, 1]], dtype=np.float32)
+    #mask = np.repeat(mask, kwargs.get('activeBatchSize'), axis=0)
+    #targetP = tf.mod(targetP, mask)
+    #targetT = tf.mod(targetT, mask)
     # Importance weigting on angles as they have smaller values
     mask = np.array([[1000, 1000, 1000, 1, 1, 1]], dtype=np.float32)
     mask = np.repeat(mask, kwargs.get('activeBatchSize'), axis=0)
-    targetP = tf.multiply(mask, targetP)
-    targetT = tf.multiply(mask, targetT)
+    targetP = tf.multiply(targetP, mask)
+    targetT = tf.multiply(targetT, mask)
     return model_base.loss(targetP, targetT, **kwargs) 
 
 def pcl_loss(pclA, tMatP, tMatT, **kwargs): # batchSize=Sne
@@ -223,22 +221,24 @@ def pcl_params_loss(pclA, pred, target, **kwargs): # batchSize=Sne
     dx = pred[3]
     dy = pred[4]
     dz = pred[5]
+    tMatP = tf.get_variable('tMatP', 12, initializer=tf.constant_initializer(0.0), dtype=tf.float32, trainable=False)
     tMatP = tf.Variable([
               tf.cos(a)*tf.cos(b), (tf.cos(a)*tf.sin(b)*tf.sin(g))-(tf.sin(a)*tf.cos(g)), (tf.cos(a)*tf.sin(b)*tf.cos(g))+(tf.sin(a)*tf.sin(g)), dx,
               tf.sin(a)*tf.cos(b), (tf.sin(a)*tf.sin(b)*tf.sin(g))+(tf.cos(a)*tf.cos(g)), (tf.sin(a)*tf.sin(b)*tf.cos(g))-(tf.cos(a)*tf.sin(g)), dy,
               -tf.sin(b),          tf.cos(b)*tf.sin(g),                                   tf.cos(b)*tf.cos(g),                                   dz
-           ], dtype=tf.float32, name='tMatP')
+            ], dtype=tf.float32, name='tMatP', trainable=False)
     a = target[0]
     b = target[1]
     g = target[2]
     dx = target[3]
     dy = target[4]
     dz = target[5]
+    tMatT = tf.get_variable('tMatT', 12, initializer=tf.constant_initializer(0.0), dtype=tf.float32, trainable=False)
     tMatT = tf.Variable([
               tf.cos(a)*tf.cos(b), (tf.cos(a)*tf.sin(b)*tf.sin(g))-(tf.sin(a)*tf.cos(g)), (tf.cos(a)*tf.sin(b)*tf.cos(g))+(tf.sin(a)*tf.sin(g)), dx,
               tf.sin(a)*tf.cos(b), (tf.sin(a)*tf.sin(b)*tf.sin(g))+(tf.cos(a)*tf.cos(g)), (tf.sin(a)*tf.sin(b)*tf.cos(g))-(tf.cos(a)*tf.sin(g)), dy,
               -tf.sin(b),          tf.cos(b)*tf.sin(g),                                   tf.cos(b)*tf.cos(g),                                   dz
-           ], dtype=tf.float32, name='tMatT')
+           ], dtype=tf.float32, name='tMatT', trainable=False)
     # convert tMat's to correct form: 12 x batchSize -> batchSize x 12
     tMatP = tf.transpose(tMatP)
     tMatT = tf.transpose(tMatT)

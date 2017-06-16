@@ -100,6 +100,7 @@ def train():
 
         # Get images and transformation for model_cnn.
         images, pclA, pclB, targetT, tfrecFileIDs = data_input.inputs(**modelParams)
+        print('Input        ready')
         # Build a Graph that computes the HAB predictions from the
         # inference model.
         targetP = model_cnn.inference(images, **modelParams)
@@ -109,21 +110,22 @@ def train():
         # use mask to get degrees significant
         # What about adaptive mask to zoom into differences at each CNN stack !!!
         #loss = model_cnn.weighted_loss(targetP, targetT, **modelParams)
+        loss = model_cnn.weighted_params_loss(targetP, targetT, **modelParams)
         # pcl based loss
-        loss = model_cnn.pcl_params_loss(pclA, targetP, targetT, **modelParams)
+        #loss = model_cnn.pcl_params_loss(pclA, targetP, targetT, **modelParams)
 
         # Build a Graph that trains the model with one batch of examples and
         # updates the model parameters.
         opTrain = model_cnn.train(loss, globalStep, **modelParams)
         ##############################
-        print('trainDone -- MAIN')
+        print('Training     ready')
         # Create a saver.
         saver = tf.train.Saver(tf.global_variables())
-        print('SAVER -- MAIN')
+        print('Saver        ready')
 
         # Build the summary operation based on the TF collection of Summaries.
         summaryOp = tf.summary.merge_all()
-        print('MERGESUMMARY -- MAIN')
+        print('MergeSummary ready')
 
         # Build an initialization operation to run below.
         #init = tf.initialize_all_variables()
@@ -134,27 +136,26 @@ def train():
         config = tf.ConfigProto(log_device_placement=modelParams['logDevicePlacement'])
         config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
         sess = tf.Session(config=config)
-        print('SESSION -- MAIN')
+        print('Session      ready')
 
 
         #sess = tf_debug.LocalCLIDebugWrapperSession(sess)
         #sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
         sess.run(init)
-        print('INIT -- MAIN')
 
         # Start the queue runners.
         tf.train.start_queue_runners(sess=sess)
-        print('QUEUERUNNER -- MAIN')
+        print('QueueRunner  started')
 
         summaryWriter = tf.summary.FileWriter(modelParams['trainLogDir'], sess.graph)
-
+        
+        print('Training     started')
         durationSum = 0
         durationSumAll = 0
         for step in xrange(modelParams['maxSteps']):
             startTime = time.time()
             _, lossValue = sess.run([opTrain, loss])
             duration = time.time() - startTime
-            print(lossValue)
             durationSum += duration
             assert not np.isnan(lossValue), 'Model diverged with loss = NaN'
 
@@ -234,9 +235,6 @@ def main(argv=None):  # pylint: disable=unused-argumDt
     #print('Test  Logs Output: %s' % modelParams['testLogDir'])
     print('Train Warp Output: %s' % modelParams['warpedTrainDataDir'])
     #print('Test  Warp Output: %s' % modelParams['warpedTestDataDir'])
-    print('')
-    print('')
-    print('')
     print('')
     print('')
     #if input("(Overwrite WARNING) Did you change logs directory? ") != "yes":

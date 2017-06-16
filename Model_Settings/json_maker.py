@@ -112,8 +112,8 @@ data = {
     'clipNorm' : 1.0,
     'lossFunction' : 'L2',
     # Train Parameters
-    'trainBatchSize' : 2,
-    'testBatchSize' : 2,
+    'trainBatchSize' : 16,
+    'testBatchSize' : 16,
     'outputSize' : 6, # 6 Params
     'trainMaxSteps' : 30000,
     'testMaxSteps' : 1,
