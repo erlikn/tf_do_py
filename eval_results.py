@@ -50,6 +50,12 @@ def _get_all_predictions(pFilenames):
         predAllList.append(seqList)
     return predAllList
 
+def _get_pose_from_param(pPoseParam)
+    poses = list()
+    for i in range(len(pPoseParam)-1):
+        poses.append(kitti._get_tmat_from_params(pPoseParam[i]).reshape(3*4))
+    return poses
+
 def _get_prediction(predAllList, seqID):
     """
     get prediction for an specific sequence
@@ -86,6 +92,7 @@ def _get_gt_map_seq(gtPose):
     # add final origin to the begining
     pathMap = np.append(origin, pathMap, axis=1)
     return pathMap
+
 def _get_gt_map(gtPose):
     """
     get the ground truth path map
@@ -117,7 +124,6 @@ def _get_gt_map_backwards(gtPose):
     # add final origin
     pathMap = np.append(pathMap, origin, axis=1)
     return pathMap
-
 
 def _get_p_map(pPose):
     """
@@ -199,7 +205,8 @@ def evaluate():
         #vis_path(gtMap, 'GTBACK')
         # Get predictions for a seqID
         # create map
-        pPose = _get_prediction(predPoses, modelParams['seqIDs'][i])
+        pPoseParam = _get_prediction(predPoses, modelParams['seqIDs'][i])
+        pPose = _get_pose_from_param(pPoseParam)
         #pMap = _get_p_map(pPose) # w.r.t. sequential
         pMap = _get_p_map_w_orig(pPose, gtPose)
         #vis_path(pMap, 'Pred')
