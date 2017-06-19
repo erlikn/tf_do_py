@@ -87,24 +87,7 @@ def train():
     if not os.path.exists(modelParams['dataDir']):
         raise ValueError("No such data directory %s" % modelParams['dataDir'])    
 
-    #meanImgFi1000le = os.path.join(FLAGS.dataDir, "meta")
-    #if not os.path.isfile(meanImgFile):
-    #    raise ValueError("Warning, no meta file found at %s" % meanImgFile)
-    #else:
-    #    with open(meanImgFile, "r") as inMeanFile:
-    #        meanInfo = json.load(inMeanFile)
-    #
-    #    meanImg = meanInfo['mean']
-    #
-    #    # also load the target output sizes
-    #    params['targSz'] = meanInfo["targSz"]
-
-    #_setupLogging(os.path.join(modelParams['trainLogDir'], "genlog"))
-
     with tf.Graph().as_default():
-        # BGR to RGB
-        #params['meanImg'] = tf.constant(meanImg, dtype=tf.float32)
-
         # track the number of train calls (basically number of batches processed)
         globalStep = tf.get_variable('globalStep',
                                      [],
@@ -112,23 +95,29 @@ def train():
                                      trainable=False)
 
         # Get images and transformation for model_cnn.
-        images, pclA, pclB, tMatT, tfrecFileIDs = data_input.inputs(**modelParams)
+        images, pclA, pclB, targetT, tfrecFileIDs = data_input.inputs(**modelParams)
+        print('Input        ready')
         # Build a Graph that computes the HAB predictions from the
         # inference model.
-        tMatP = model_cnn.inference(images, **modelParams)
+        targetP = model_cnn.inference(images, **modelParams)
         
         # Calculate loss. 2 options:
-        
+
         # use mask to get degrees significant
         # What about adaptive mask to zoom into differences at each CNN stack !!!
-        loss = model_cnn.weighted_loss(tMatP, tMatT, **modelParams)
+        #loss = model_cnn.weighted_loss(targetP, targetT, **modelParams)
+        loss = model_cnn.weighted_params_loss(targetP, targetT, **modelParams)
+        # pcl based loss
+        #loss = model_cnn.pcl_params_loss(pclA, targetP, targetT, **modelParams)
 
-
-        # pcl based
-        #loss = model_cnn.pcl_loss(pclA, tMatP, tMatT, **modelParams)
-
+        # Build a Graph that trains the model with one batch of examples and
+        # updates the model parameters.
+        opTrain = model_cnn.train(loss, globalStep, **modelParams)
+        ##############################
+        print('Training     ready')
         # Create a saver.
         saver = tf.train.Saver(tf.global_variables())
+        print('Saver        ready')
 
         # Build an initialization operation to run below.
         #init = tf.initialize_all_variables()
@@ -138,7 +127,8 @@ def train():
         # Start running operations on the Graph.
         config = tf.ConfigProto(log_device_placement=modelParams['logDevicePlacement'])
         config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
-        sess = tf.Session(config = config)
+        sess = tf.Session(config=config)
+        print('Session      ready')
         
         #sess = tf_debug.LocalCLIDebugWrapperSession(sess)
         #sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
@@ -150,9 +140,10 @@ def train():
 
         # Start the queue runners.
         tf.train.start_queue_runners(sess=sess)
+        print('QueueRunner  started')
 
-        durationSum = 0
-        durationSumAll = 0
+        print('Write        started')
+
         ######### USE LATEST STATE TO WARP IMAGES
         if modelParams['writeWarpedImages']:
             lossValueSum = 0
@@ -160,11 +151,11 @@ def train():
             print('Warping images with batch size %d in %d steps' % (modelParams['activeBatchSize'], stepsForOneDataRound))
             for step in xrange(stepsForOneDataRound):
                 startTime = time.time()
-                evImages, evPclA, evPclB, evtMatT, evtMatP, evtfrecFileIDs, evlossValue = sess.run([images, pclA, pclB, tMatT, tMatP, tfrecFileIDs, loss])
+                evImages, evPclA, evPclB, evtargetT, evtargetP, evtfrecFileIDs, evlossValue = sess.run([images, pclA, pclB, targetT, targetP, tfrecFileIDs, loss])
                 duration = time.time() - startTime
                 durationSum += duration
                 #### put imageA, warpped imageB by pHAB, HAB-pHAB as new HAB, changed fileaddress tfrecFileIDs
-                data_output.output(evImages, evPclA, evPclB, evtMatT, evtMatP, evtfrecFileIDs, **modelParams)
+                data_output.output(evImages, evPclA, evPclB, evtargetT, evtargetP, evtfrecFileIDs, **modelParams)
                 duration = time.time() - startTime
                 durationSumAll += duration
                 # Print Progress Info
