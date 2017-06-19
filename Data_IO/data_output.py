@@ -55,9 +55,9 @@ def output(batchImages, batchPclA, batchPclB, bargetT, targetP, batchTFrecFileID
       ValueError: If no dataDir
     """
     num_cores = multiprocessing.cpu_count() - 2
-    Parallel(n_jobs=num_cores)(delayed(output_loop)(batchImages, batchPclA, batchPclB, bargetT, targetP, batchTFrecFileIDs, i, **kwargs) for i in range(kwargs.get('activeBatchSize')))
-    #for i in range(kwargs.get('activeBatchSize')):
-    #    output_loop(batchImages, batchPclA, batchPclB, bargetT, targetP, batchTFrecFileIDs, **kwargs):
+    #Parallel(n_jobs=num_cores)(delayed(output_loop)(batchImages, batchPclA, batchPclB, bargetT, targetP, batchTFrecFileIDs, i, **kwargs) for i in range(kwargs.get('activeBatchSize')))
+    for i in range(kwargs.get('activeBatchSize')):
+        output_loop(batchImages, batchPclA, batchPclB, bargetT, targetP, batchTFrecFileIDs, i, **kwargs)
     return
 
 def output_loop(batchImages, batchPclA, batchPclB, bargetT, targetP, batchTFrecFileIDs, i, **kwargs):
@@ -83,9 +83,9 @@ def output_loop(batchImages, batchPclA, batchPclB, bargetT, targetP, batchTFrecF
                                 targetRes,
                                 kwargs.get('warpedOutputFolder')+'/', filename)
     if kwargs.get('phase') == 'train':
-        folderTmat = kwargs.get('targetTrainDir')
+        folderTmat = kwargs.get('tMatTrainDir')
     else:
-        folderTmat = kwargs.get('targetTestDir')
+        folderTmat = kwargs.get('tMatTestDir')
     write_predictions(batchTFrecFileIDs[i], targetP[i], folderTmat)
     return
 

@@ -38,7 +38,7 @@ with open('Model_Settings/'+jsonToRead) as data_file:
 
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 from tensorflow.python.client import device_lib
 print(device_lib.list_local_devices())
@@ -52,15 +52,15 @@ model_cnn = importlib.import_module('Model_Factory.'+modelParams['modelName'])
 
 ####################################################
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_integer('printOutStep', 1,
+tf.app.flags.DEFINE_integer('printOutStep', 100,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('summaryWriteStep', 1,
+tf.app.flags.DEFINE_integer('summaryWriteStep', 100,
                             """Number of batches to run.""")
 tf.app.flags.DEFINE_integer('modelCheckpointStep', 1000,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('ProgressStepReportStep', 2,
+tf.app.flags.DEFINE_integer('ProgressStepReportStep', 250,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('ProgressStepReportOutputWrite', 2,
+tf.app.flags.DEFINE_integer('ProgressStepReportOutputWrite', 250,
                             """Number of batches to run.""")
 ####################################################
 def _get_control_params():
@@ -152,7 +152,7 @@ def train():
         print('Training     started')
         durationSum = 0
         durationSumAll = 0
-        for step in xrange(modelParams['maxSteps']):
+        for step in range(1):# xrange(modelParams['maxSteps']):
             startTime = time.time()
             _, lossValue = sess.run([opTrain, loss])
             duration = time.time() - startTime
@@ -183,6 +183,8 @@ def train():
                         ((100*step)/modelParams['maxSteps'], durationSum/60, (((durationSum*modelParams['maxSteps'])/(step+1))/60)-(durationSum/60)))
                 
         ######### USE LATEST STATE TO WARP IMAGES
+        durationSum = 0
+        durationSumAll = 0
         if modelParams['writeWarpedImages']:
             lossValueSum = 0
             stepsForOneDataRound = int((modelParams['numExamples']/modelParams['activeBatchSize']))+1
@@ -200,8 +202,8 @@ def train():
                 if ((step % FLAGS.ProgressStepReportOutputWrite) == 0) or ((step+1) == stepsForOneDataRound):
                     print('Progress: %.2f%%, Loss: %.2f, Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
                             ((100*step)/stepsForOneDataRound, evlossValue/(step+1), durationSum/60, (((durationSum*stepsForOneDataRound)/(step+1))/60)-(durationSum/60)))
-                    print('Total Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
-                            durationSumAll/60, (((durationSumAll*stepsForOneDataRound)/(step+1))/60)-(durationSumAll/60))
+                    #print('Total Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
+                    #        durationSumAll/60, (((durationSumAll*stepsForOneDataRound)/(step+1))/60)-(durationSumAll/60))
             print('Average training loss = %.2f - Average time per sample= %.2f s, Steps = %d' % (evlossValue/modelParams['activeBatchSize'], durationSum/(step*modelParams['activeBatchSize']), step))
 
 
@@ -237,9 +239,9 @@ def main(argv=None):  # pylint: disable=unused-argumDt
     #print('Test  Warp Output: %s' % modelParams['warpedTestDataDir'])
     print('')
     print('')
-    #if input("(Overwrite WARNING) Did you change logs directory? ") != "yes":
-    #    print("Please consider changing logs directory in order to avoid overwrite!")
-    #    return
+    if input("(Overwrite WARNING) Did you change logs directory? ") != "yes":
+        print("Please consider changing logs directory in order to avoid overwrite!")
+        return
     if tf.gfile.Exists(modelParams['trainLogDir']):
         tf.gfile.DeleteRecursively(modelParams['trainLogDir'])
     tf.gfile.MakeDirs(modelParams['trainLogDir'])

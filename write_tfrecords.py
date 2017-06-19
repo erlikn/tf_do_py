@@ -38,7 +38,7 @@ with open('Model_Settings/'+jsonToRead) as data_file:
 
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 from tensorflow.python.client import device_lib
 print(device_lib.list_local_devices())
@@ -52,13 +52,13 @@ model_cnn = importlib.import_module('Model_Factory.'+modelParams['modelName'])
 
 ####################################################
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_integer('printOutStep', 10,
+tf.app.flags.DEFINE_integer('printOutStep', 1,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('summaryWriteStep', 100,
+tf.app.flags.DEFINE_integer('summaryWriteStep', 1,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('modelCheckpointStep', 1000,
+tf.app.flags.DEFINE_integer('modelCheckpointStep', 10,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('ProgressStepReportStep', 25,
+tf.app.flags.DEFINE_integer('ProgressStepReportStep', 2,
                             """Number of batches to run.""")
 ####################################################
 def _get_control_params():
@@ -137,7 +137,7 @@ def train():
         # restore a saver.
         saver = tf.train.Saver(tf.global_variables())
         saver.restore(sess, modelParams['trainLogDir']+'/model.ckpt-'+str(modelParams['trainMaxSteps']-1))
-
+        print('Model        loaded')
         # Start the queue runners.
         tf.train.start_queue_runners(sess=sess)
         print('QueueRunner  started')
@@ -145,6 +145,8 @@ def train():
         print('Write        started')
 
         ######### USE LATEST STATE TO WARP IMAGES
+        durationSum = 0
+        durationSumAll = 0
         if modelParams['writeWarpedImages']:
             lossValueSum = 0
             stepsForOneDataRound = int((modelParams['numExamples']/modelParams['activeBatchSize']))+1

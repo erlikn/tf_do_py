@@ -262,6 +262,7 @@ def get_depth_image_pano_pclView(xyz, height=1.6):
     rXYZ = np.linalg.norm(xyz, axis=0)
     xyz = xyz.transpose()
     first = True
+    pclview = np.ndarray(shape=[xyz.shape[1],0], dtype=np.float32)
     for i in range(xyz.shape[0]):
         # xyz[i][2] >= 0 means all the points who have depth larger than 0 (positive depth plane)
         if (xyz[i][2] >= 0) and (xyz[i][1] < height) and (rXYZ[i] > 0) and (xyz[i][0]/rXYZ[i] > -1) and (xyz[i][0]/rXYZ[i] < 1) and (xyz[i][1]/rXYZ[i] > -0.12) and (xyz[i][1]/rXYZ[i] < 0.4097): # frontal view & above ground & x in range & y in range
