@@ -5,7 +5,7 @@ import json
 import importlib
 from os import listdir
 from os.path import isfile, join
-
+print(os.getcwd())
 import numpy as np
 from six.moves import xrange  # pylint: disable=redefined-builtin
 
@@ -50,10 +50,13 @@ def _get_all_predictions(pFilenames):
         predAllList.append(seqList)
     return predAllList
 
-def _get_pose_from_param(pPoseParam)
+def _get_pose_from_param(pPoseParam):
     poses = list()
     for i in range(len(pPoseParam)-1):
-        poses.append(kitti._get_tmat_from_params(pPoseParam[i]).reshape(3*4))
+        pposep = pPoseParam[i]['tmat']
+        #print(pposep)
+        #print(i)
+        poses.append(kitti._get_tmat_from_params(pposep).reshape(3*4))
     return poses
 
 def _get_prediction(predAllList, seqID):
@@ -106,7 +109,6 @@ def _get_gt_map(gtPose):
         pointT = kitti.transform_pcl(origin, pose)
         pathMap = np.append(pathMap, pointT, axis=1)
     return pathMap
-
 def _get_gt_map_backwards(gtPose):
     """
     iterate backwards to transform step by step backwards
@@ -149,7 +151,7 @@ def _get_p_map_w_orig(pPose, gPose):
     pathMap = np.ndarray(shape=[3,0], dtype=np.float32)
     pathMap = np.append(pathMap, origin, axis=1)
     for i in range(len(pPose)-1,-1,-1):
-        poseA2B = kitti._get_3x4_tmat(np.array(pPose[i]['tmat']))
+        poseA2B = kitti._get_3x4_tmat(np.array(pPose[i]))
         pathMap = kitti.transform_pcl(pathMap, poseA2B)
         pathMap = np.append(pathMap, origin, axis=1)
     #### PathMap consists of all points transformed to the last frame coordinates

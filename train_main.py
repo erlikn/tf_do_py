@@ -152,7 +152,7 @@ def train():
         print('Training     started')
         durationSum = 0
         durationSumAll = 0
-        for step in range(1):# xrange(modelParams['maxSteps']):
+        for step in xrange(modelParams['maxSteps']):
             startTime = time.time()
             _, lossValue = sess.run([opTrain, loss])
             duration = time.time() - startTime
