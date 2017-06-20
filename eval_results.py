@@ -106,6 +106,7 @@ def _get_gt_map(gtPose):
         pointT = kitti.transform_pcl(origin, pose)
         pathMap = np.append(pathMap, pointT, axis=1)
     return pathMap
+
 def _get_gt_map_backwards(gtPose):
     """
     iterate backwards to transform step by step backwards

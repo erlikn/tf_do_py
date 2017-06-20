@@ -391,8 +391,8 @@ def prepare_dataset(datasetType, pclFolder, poseFolder, seqIDs, tfRecFolder):
         #    shapes = process_dataset(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j)
         #    print(shapes)
         shapes = Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j) for j in range(0,len(pclFilenames)-1))
-    for i in range(0,len(pclFilenames)-1):
-        print(shapes[i])
+    #for i in range(0,len(pclFilenames)-1):
+    #    print(shapes[i])
         
     print('Done')
 
