@@ -337,12 +337,13 @@ def process_dataset(startTime, durationSum, pclFolder, seqID, pclFilenames, pose
     pose_Bo = _get_3x4_tmat(poseFile[i+1])
     imgDepth_B, xyzi_B = get_depth_image_pano_pclView(xyzi_B)
     # get target pose  A->B also changes to abgxyz : get abgxyzb-abgxyza
-#    pose_AB = _get_tMat_A_2_B(pose_Ao, pose_Bo)
+    pose_AB = _get_tMat_A_2_B(pose_Ao, pose_Bo)
+    abgxyzA2B = kitti._get_params_from_tmat(pose_AB)
 #    np.set_printoptions(precision=4, suppress=True)
 #    print("orig\n", pose_AB)
-    abgxyzA = kitti._get_params_from_tmat(pose_Ao)
-    abgxyzB = kitti._get_params_from_tmat(pose_Bo)
-    abgxyzA2B = abgxyzB-abgxyzA # A->B
+#    abgxyzA = kitti._get_params_from_tmat(pose_Ao)
+#    abgxyzB = kitti._get_params_from_tmat(pose_Bo)
+#    abgxyzA2B = abgxyzB-abgxyzA # A->B
     #print("paramsA\n", abgxyzA)
     #print("paramsB\n", abgxyzB)
     #print("paramsB-A\n", abgxyzB-abgxyzA)
@@ -391,9 +392,9 @@ def prepare_dataset(datasetType, pclFolder, poseFolder, seqIDs, tfRecFolder):
         #    shapes = process_dataset(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j)
         #    print(shapes)
         shapes = Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, j) for j in range(0,len(pclFilenames)-1))
-    #for i in range(0,len(pclFilenames)-1):
-    #    print(shapes[i])
-        
+    for i in range(0,len(pclFilenames)-1):
+        print(shapes[i])
+
     print('Done')
 
 ################################
@@ -562,8 +563,8 @@ def _set_folders(folderPath):
 
 pclPath = '../Data/kitti/pointcloud/'
 posePath = '../Data/kitti/poses/'
-seqIDtrain = ['00']#, '01', '02', '03', '04', '05', '06', '07', '08']
-#seqIDtest = ['09', '10']
+seqIDtrain = ['01', '02', '03', '04', '05', '06', '07', '08']#['00', '01', '02', '03', '04', '05', '06', '07', '08']
+seqIDtest = ['09', '10']
 
 traintfRecordFLD = "../Data/kitti/train_tfrecords/"
 testtfRecordFLD = "../Data/kitti/test_tfrecords/"
@@ -590,4 +591,4 @@ _set_folders(traintfRecordFLD)
 _set_folders(testtfRecordFLD)
 
 prepare_dataset("train", pclPath, posePath, seqIDtrain, traintfRecordFLD)
-#prepare_dataset("test", pclPath, posePath, seqIDtest, testtfRecordFLD)
+prepare_dataset("test", pclPath, posePath, seqIDtest, testtfRecordFLD)

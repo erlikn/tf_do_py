@@ -14,7 +14,7 @@ import Data_IO.kitti_shared as kitti
 # import json_maker, update json files and read requested json file
 import Model_Settings.json_maker as json_maker
 json_maker.recompile_json_files()
-jsonToRead = '170523_ITR_B_1.json'
+jsonToRead = '170622_ITR_B_3.json'
 print("Reading %s" % jsonToRead)
 with open('Model_Settings/'+jsonToRead) as data_file:
     modelParams = json.load(data_file)
@@ -58,6 +58,13 @@ def _get_pose_from_param(pPoseParam):
         #print(i)
         poses.append(kitti._get_tmat_from_params(pposep).reshape(3*4))
     return poses
+
+def _get_param_from_pose(poselist):
+    params = list()
+    for i in range(len(poselist)-1):
+        poseA2B = kitti._get_tMat_A_2_B(kitti._get_3x4_tmat(poselist[i]),kitti._get_3x4_tmat(poselist[i+1]))
+        params.append(kitti._get_params_from_tmat(poseA2B))
+    return params
 
 def _get_prediction(predAllList, seqID):
     """
@@ -158,7 +165,7 @@ def _get_p_map_w_orig(pPose, gPose):
     # transform them to origin access
     pathMap = kitti.transform_pcl(pathMap, gPose[0])
     # add final origin to the begining
-    pathMap = np.append(origin, pathMap, axis=1)
+    #pathMap = np.append(origin, pathMap, axis=1)
     return pathMap
 
 def _get_control_params():
@@ -200,6 +207,8 @@ def evaluate():
         # create map
         gtPosePath = kitti.get_pose_path(modelParams['gTruthDir'], modelParams['seqIDs'][i])
         gtPose = kitti.get_pose_data(gtPosePath)
+        gtParam = _get_param_from_pose(gtPose)
+        print("GT params count:", len(gtParam))
         #gtMap = _get_gt_map(gtPose) # w.r.t. Original
         #vis_path(gtMap, 'GTORIG')
         gtMap = _get_gt_map_seq(gtPose) # w.r.t. sequential
@@ -209,6 +218,11 @@ def evaluate():
         # Get predictions for a seqID
         # create map
         pPoseParam = _get_prediction(predPoses, modelParams['seqIDs'][i])
+        print("Pred params count:", len(pPoseParam))
+        pParam = list()
+        for i in range(len(pPoseParam)):
+            pParam.append(pPoseParam[i]['tmat'])
+        print(np.sum(np.abs(np.array(pParam)-np.array(gtParam))))
         pPose = _get_pose_from_param(pPoseParam)
         #pMap = _get_p_map(pPose) # w.r.t. sequential
         pMap = _get_p_map_w_orig(pPose, gtPose)

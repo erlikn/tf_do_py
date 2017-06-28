@@ -35,6 +35,20 @@ PCL_ROWS = 3
 
 
 ############################################################################
+def _get_tMat_A_2_B(tMatA2o, tMatB2o):
+    '''
+    3x4 , 3x4 = 3x4
+    tMatA2o A -> O (source pcl is in A), tMatB2o B -> O (target pcl will be in B)
+    return tMat A -> B
+    '''
+    # tMatA2o: A -> Orig
+    # tMatB2o: B -> Orig ==> inv(tMatB2o): Orig -> B
+    # inv(tMatB2o) * tMatA2o : A -> B
+    tMatA2o = np.append(tMatA2o, [[0, 0, 0, 1]], axis=0)
+    tMatB2o = np.append(tMatB2o, [[0, 0, 0, 1]], axis=0)
+    tMatA2B = np.matmul(np.linalg.inv(tMatB2o), tMatA2o)
+    tMatA2B = np.delete(tMatA2B, tMatA2B.shape[0]-1, 0)
+    return tMatA2B
 ################# TMAT TO/FROM PARAMS
 def _get_params_from_tmat(tmat):
     """
