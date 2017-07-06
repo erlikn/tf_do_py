@@ -255,6 +255,20 @@ def _get_tMat_A_2_B(tMatA2o, tMatB2o):
     tMatA2B = np.delete(tMatA2B, tMatA2B.shape[0]-1, 0)
     return tMatA2B
 
+def _get_tMat_B_2_O(tMatA2o, tMatA2B):
+    '''
+    tMatA2o A -> O (target pcl will be in O), tMatA2B A -> B (source pcl is in B)
+    return tMat B -> O
+    '''
+    # tMatA2o: A -> Orig
+    # tMatA2B: A -> B ==> inv(tMatA2B): B -> A
+    # tMatA2o * inv(tMatA2B) : B -> O
+    tMatA2o = np.append(tMatA2o, [[0, 0, 0, 1]], axis=0)
+    tMatA2B = np.append(tMatA2B, [[0, 0, 0, 1]], axis=0)
+    tMatB2o = np.matmul(tMatA2o, np.linalg.inv(tMatA2B))
+    tMatB2o = np.delete(tMatB2o, tMatB2o.shape[0]-1, 0)
+    return tMatB2o
+
 def _get_3x4_tmat(poseRow):
     return poseRow.reshape([3,4])
 def _get_pcl_XYZ(filePath):
