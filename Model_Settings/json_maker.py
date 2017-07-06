@@ -313,10 +313,10 @@ def itr_170622_ITR_B(reCompileITR, trainLogDirBase, testLogDirBase):
 
 def itr_170628_ITR_B(reCompileITR, trainLogDirBase, testLogDirBase):
     if reCompileITR:
-        data['modelName'] = 'twin_cnn_4p4l2f'
+        data['modelName'] = 'twin_cnn_6p6l2f'
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
-        runName = '170622_ITR_B_1'
+        runName = '170628_ITR_B_1'
         data['trainDataDir'] = '../Data/kitti/train_tfrecords'
         data['testDataDir'] = '../Data/kitti/test_tfrecords'
         data['trainLogDir'] = trainLogDirBase + runName
@@ -330,12 +330,12 @@ def itr_170628_ITR_B(reCompileITR, trainLogDirBase, testLogDirBase):
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
         data['warpOriginalImage'] = True
-        data['modelShape'] = [64, 64, 64, 64, 128, 128, 128, 128, 1024]
+        data['modelShape'] = [64, 64, 64, 64, 64, 64, 128, 128, 128, 128, 128, 128, 1024]
         data['batchNorm'] = True
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
         ### ITERATION 2
-        runName = '170622_ITR_B_2'
+        runName = '170628_ITR_B_2'
         data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
@@ -353,7 +353,7 @@ def itr_170628_ITR_B(reCompileITR, trainLogDirBase, testLogDirBase):
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
         ### ITERATION 3
-        runName = '170622_ITR_B_3'
+        runName = '170628_ITR_B_3'
         data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
@@ -371,7 +371,7 @@ def itr_170628_ITR_B(reCompileITR, trainLogDirBase, testLogDirBase):
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
         ### ITERATION 4
-        runName = '170622_ITR_B_4'
+        runName = '170628_ITR_B_4'
         data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName

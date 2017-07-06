@@ -230,6 +230,9 @@ def conv_fire_parallel_residual_module(name, prevLayerOut, prevLayerDim, histori
     historicLayerOut = tf.split(historicLayerOut, numParallelModules, axis=3)
     historicLayerIndivDim = historicLayerDim / numParallelModules
 
+    if (fireDimsSingleModule.get('cnn1x1')):
+        cnnName = 'cnn1x1'
+        kernelSize = 1
     if (fireDimsSingleModule.get('cnn3x3')):
         cnnName = 'cnn3x3'
         kernelSize = 3
@@ -326,6 +329,9 @@ def conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, fireDimsSingleMo
     prevLayerOut = tf.split(prevLayerOut, numParallelModules, axis=3)
     prevLayerIndivDims = prevLayerDim / numParallelModules
 
+    if (fireDimsSingleModule.get('cnn1x1')):
+        cnnName = 'cnn1x1'
+        kernelSize = 1
     if (fireDimsSingleModule.get('cnn3x3')):
         cnnName = 'cnn3x3'
         kernelSize = 3
@@ -405,6 +411,9 @@ def conv_fire_residual_module(name, prevLayerOut, prevLayerDim, historicLayerOut
             # zero pad current historicLayerOut to the size of prevLayerDim
             historicLayerOut = historicLayerOut
     
+    if (fireDims.get('cnn1x1')):
+        cnnName = 'cnn1x1'
+        kernelSize = 1
     if (fireDims.get('cnn3x3')):
         cnnName = 'cnn3x3'
         kernelSize = 3
@@ -457,6 +466,9 @@ def conv_fire_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwar
     
     existingParams = kwargs.get('existingParams')
     
+    if (fireDims.get('cnn1x1')):
+        cnnName = 'cnn1x1'
+        kernelSize = 1
     if (fireDims.get('cnn3x3')):
         cnnName = 'cnn3x3'
         kernelSize = 3
