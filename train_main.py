@@ -31,7 +31,7 @@ PHASE = 'train'
 # import json_maker, update json files and read requested json file
 import Model_Settings.json_maker as json_maker
 json_maker.recompile_json_files()
-jsonToRead = '170628_ITR_B_1.json'
+jsonToRead = '170706_ITR_B_1.json'
 print("Reading %s" % jsonToRead)
 with open('Model_Settings/'+jsonToRead) as data_file:
     modelParams = json.load(data_file)
@@ -269,7 +269,6 @@ def train():
         sess = tf.Session(config=config)
         print('Session      ready')
 
-
         #sess = tf_debug.LocalCLIDebugWrapperSession(sess)
         #sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
         sess.run(init)
@@ -329,7 +328,7 @@ def train():
         durationSumAll = 0
         if modelParams['writeWarpedImages']:
             lossValueSum = 0
-            stepsForOneDataRound = int((modelParams['numExamples']/modelParams['activeBatchSize']))+1
+            stepsForOneDataRound = int((modelParams['numExamples']/modelParams['activeBatchSize']))+5
             print('Warping %d images with batch size %d in %d steps' % (modelParams['numExamples'], modelParams['activeBatchSize'], stepsForOneDataRound))
             for step in xrange(stepsForOneDataRound):
                 startTime = time.time()
