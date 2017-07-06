@@ -408,7 +408,7 @@ def itr_170706_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
         data['warpOriginalImage'] = True
-        data['modelShape'] = [64, 64, 64, 64, 128, 128, 128, 128, 1024]
+        data['modelShape'] = [32, 64, 32, 64, 64, 128, 64, 128, 1024]
         data['batchNorm'] = True
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
@@ -426,7 +426,7 @@ def itr_170706_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
         data['tMatTestDir'] = data['testLogDir']+'/target'
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
-        data['modelShape'] = [64, 64, 64, 64, 128, 128, 128, 128, 1024]
+        data['modelShape'] = [32, 64, 32, 64, 64, 128, 64, 128, 1024]
         data['batchNorm'] = True
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
@@ -444,7 +444,7 @@ def itr_170706_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
         data['tMatTestDir'] = data['testLogDir']+'/target'
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
-        data['modelShape'] = [64, 64, 64, 64, 128, 128, 128, 128, 1024]
+        data['modelShape'] = [32, 64, 32, 64, 64, 128, 64, 128, 1024]
         data['batchNorm'] = True
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
@@ -462,7 +462,7 @@ def itr_170706_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
         data['tMatTestDir'] = data['testLogDir']+'/target'
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
-        data['modelShape'] = [64, 64, 64, 64, 128, 128, 128, 128, 1024]
+        data['modelShape'] = [32, 64, 32, 64, 64, 128, 64, 128, 1024]
         data['batchNorm'] = True
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)

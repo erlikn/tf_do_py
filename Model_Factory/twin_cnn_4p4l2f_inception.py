@@ -62,8 +62,8 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
     if kwargs.get('batchNorm'):
         fireOut = model_base.batch_norm('batch_norm', fireOut, dtype)
     ############# CONV2_TWIN 3x3 conv, 64 input dims, 64 output dims (filters)
-    fireOut, prevExpandDim = model_base.conv_fire_parallel_inception_module('conv2', fireOut, prevExpandDim,
-                                                                  {'cnn1x1': modelShape[1], 'cnn3x3': modelShape[1], 'cnn5x5': modelShape[1]},
+    fireOut, prevExpandDim = model_base.conv_fire_parallel_module('conv2', fireOut, prevExpandDim,
+                                                                  {'cnn1x1': modelShape[1]},
                                                                   wd, **kwargs)
     # calc batch norm CONV2_TWIN
     if kwargs.get('batchNorm'):
@@ -79,8 +79,8 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
     if kwargs.get('batchNorm'):
         fireOut = model_base.batch_norm('batch_norm', fireOut, dtype)
     ############# CONV4_TWIN 3x3 conv, 64 input dims, 64 output dims (filters)
-    fireOut, prevExpandDim = model_base.conv_fire_parallel_inception_module('conv4', fireOut, prevExpandDim,
-                                                                  {'cnn1x1': modelShape[3], 'cnn3x3': modelShape[3], 'cnn5x5': modelShape[3]},
+    fireOut, prevExpandDim = model_base.conv_fire_parallel_module('conv4', fireOut, prevExpandDim,
+                                                                  {'cnn1x1': modelShape[3]},
                                                                   wd, **kwargs)
    # calc batch norm CONV4_TWIN
     if kwargs.get('batchNorm'):
@@ -96,8 +96,8 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
     if kwargs.get('batchNorm'):
         fireOut = model_base.batch_norm('batch_norm', fireOut, dtype)
     ############# CONV6 3x3 conv, 64 input dims, 64 output dims (filters)
-    fireOut, prevExpandDim = model_base.conv_fire_inception_module('conv6', fireOut, prevExpandDim,
-                                                                  {'cnn1x1': modelShape[5], 'cnn3x3': modelShape[5], 'cnn5x5': modelShape[5]},
+    fireOut, prevExpandDim = model_base.conv_fire_module('conv6', fireOut, prevExpandDim,
+                                                                  {'cnn1x1': modelShape[5]},
                                                          wd, **kwargs)
     # calc batch norm CONV6
     if kwargs.get('batchNorm'):
@@ -113,8 +113,8 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
     if kwargs.get('batchNorm'):
         fireOut = model_base.batch_norm('batch_norm', fireOut, dtype)
     ############# CONV8 3x3 conv, 64 input dims, 64 output dims (filters)
-    fireOut, prevExpandDim = model_base.conv_fire_inception_module('conv8', fireOut, prevExpandDim,
-                                                                  {'cnn1x1': modelShape[7], 'cnn3x3': modelShape[7], 'cnn5x5': modelShape[7]},
+    fireOut, prevExpandDim = model_base.conv_fire_module('conv8', fireOut, prevExpandDim,
+                                                                  {'cnn1x1': modelShape[7]},
                                                          wd, **kwargs)
     # calc batch norm CONV8
     if kwargs.get('batchNorm'):
@@ -122,7 +122,7 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
     ###### DROPOUT after CONV8
     with tf.name_scope("drop"):
         keepProb = tf.constant(kwargs.get('dropOutKeepRate') if kwargs.get('phase') == 'train' else 1.0, dtype=dtype)
-        #fireOut = tf.nn.dropout(fireOut, keepProb, name="dropout")
+        fireOut = tf.nn.dropout(fireOut, keepProb, name="dropout")
     ###### Prepare for fully connected layers
     # Reshape firout - flatten
     prevExpandDim = (kwargs.get('imageDepthRows')//(2*2*2))*(kwargs.get('imageDepthCols')//(2*2*2))*prevExpandDim
