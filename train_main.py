@@ -16,7 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 
 from datetime import datetime
-import os.path
+import os, os.path
 import time
 import logging
 import json
@@ -31,7 +31,7 @@ PHASE = 'train'
 # import json_maker, update json files and read requested json file
 import Model_Settings.json_maker as json_maker
 json_maker.recompile_json_files()
-jsonToRead = '170706_ITR_B_1.json'
+jsonToRead = '170706_ITR_B_2.json'
 print("Reading %s" % jsonToRead)
 with open('Model_Settings/'+jsonToRead) as data_file:
     modelParams = json.load(data_file)
@@ -146,17 +146,17 @@ def pcl_loss(pclA, tMatP, tMatT, **kwargs): # batchSize=Sne
     L2 difference between ground truth and predicted point cloud is the loss value
     """
     # pclA, tMatP, tMatT are in batches
-    # tMatP, tMatT should get a 0,0,0,1 row and be reshaped to 4x4
-    tMatP = tf.concat([tMatP, tf.constant(np.repeat(np.array([[0, 0, 0, 1]],
-                                                             dtype=np.float32),
-                                                    kwargs.get('activeBatchSize'),
-                                                    axis=0))],
-                      1)
-    tMatT = tf.concat([tMatT, tf.constant(np.repeat(np.array([[0, 0, 0, 1]],
-                                                             dtype=np.float32),
-                                                    kwargs.get('activeBatchSize'),
-                                                    axis=0))],
-                      1)
+    ## # tMatP, tMatT should get a 0,0,0,1 row and be reshaped to 4x4
+    ## tMatP = tf.concat([tMatP, tf.constant(np.repeat(np.array([[0, 0, 0, 1]],
+    ##                                                          dtype=np.float32),
+    ##                                                 kwargs.get('activeBatchSize'),
+    ##                                                 axis=0))],
+    ##                   1)
+    ## tMatT = tf.concat([tMatT, tf.constant(np.repeat(np.array([[0, 0, 0, 1]],
+    ##                                                          dtype=np.float32),
+    ##                                                 kwargs.get('activeBatchSize'),
+    ##                                                 axis=0))],
+    ##                   1)
     tMatP = tf.reshape(tMatP, [kwargs.get('activeBatchSize'), 4, 4])
     tMatT = tf.reshape(tMatT, [kwargs.get('activeBatchSize'), 4, 4])
     # pclA should get a row of ones
@@ -187,11 +187,12 @@ def pcl_params_loss(pclA, pred, target, **kwargs): # batchSize=Sne
     dx = pred[3]
     dy = pred[4]
     dz = pred[5]
-    tMatP = tf.get_variable('tMatP', 12, initializer=tf.constant_initializer(0.0), dtype=tf.float32, trainable=False)
+    tMatP = tf.get_variable('tMatP', shape=[16,modelParams['activeBatchSize']], initializer=tf.constant_initializer(0.0), dtype=tf.float32, trainable=False)
     tMatP = tf.Variable([
-              tf.cos(a)*tf.cos(b), (tf.cos(a)*tf.sin(b)*tf.sin(g))-(tf.sin(a)*tf.cos(g)), (tf.cos(a)*tf.sin(b)*tf.cos(g))+(tf.sin(a)*tf.sin(g)), dx,
-              tf.sin(a)*tf.cos(b), (tf.sin(a)*tf.sin(b)*tf.sin(g))+(tf.cos(a)*tf.cos(g)), (tf.sin(a)*tf.sin(b)*tf.cos(g))-(tf.cos(a)*tf.sin(g)), dy,
-              -tf.sin(b),          tf.cos(b)*tf.sin(g),                                   tf.cos(b)*tf.cos(g),                                   dz
+              tf.cos(pred[0])*tf.cos(pred[1]), (tf.cos(pred[0])*tf.sin(pred[1])*tf.sin(pred[2]))-(tf.sin(pred[0])*tf.cos(pred[2])), (tf.cos(pred[0])*tf.sin(pred[1])*tf.cos(pred[2]))+(tf.sin(pred[0])*tf.sin(pred[2])), pred[3],
+              tf.sin(pred[0])*tf.cos(pred[1]), (tf.sin(pred[0])*tf.sin(pred[1])*tf.sin(pred[2]))+(tf.cos(pred[0])*tf.cos(pred[2])), (tf.sin(pred[0])*tf.sin(pred[1])*tf.cos(pred[2]))-(tf.cos(pred[0])*tf.sin(pred[2])), pred[4],
+              -tf.sin(pred[1]),                tf.cos(pred[1])*tf.sin(pred[2]),                                                     tf.cos(pred[1])*tf.cos(pred[2]),                                                     pred[5],
+              pred[0]*0,                 pred[0]*0,                                                   pred[0]*0,                                                 pred[0]*0+1
             ], dtype=tf.float32, name='tMatP', trainable=False)
     a = target[0]
     b = target[1]
@@ -199,11 +200,12 @@ def pcl_params_loss(pclA, pred, target, **kwargs): # batchSize=Sne
     dx = target[3]
     dy = target[4]
     dz = target[5]
-    tMatT = tf.get_variable('tMatT', 12, initializer=tf.constant_initializer(0.0), dtype=tf.float32, trainable=False)
+    tMatT = tf.get_variable('tMatT', shape=[16,modelParams['activeBatchSize']], initializer=tf.constant_initializer(0.0), dtype=tf.float32, trainable=False)
     tMatT = tf.Variable([
-              tf.cos(a)*tf.cos(b), (tf.cos(a)*tf.sin(b)*tf.sin(g))-(tf.sin(a)*tf.cos(g)), (tf.cos(a)*tf.sin(b)*tf.cos(g))+(tf.sin(a)*tf.sin(g)), dx,
-              tf.sin(a)*tf.cos(b), (tf.sin(a)*tf.sin(b)*tf.sin(g))+(tf.cos(a)*tf.cos(g)), (tf.sin(a)*tf.sin(b)*tf.cos(g))-(tf.cos(a)*tf.sin(g)), dy,
-              -tf.sin(b),          tf.cos(b)*tf.sin(g),                                   tf.cos(b)*tf.cos(g),                                   dz
+              tf.cos(target[0])*tf.cos(target[1]), (tf.cos(target[0])*tf.sin(target[1])*tf.sin(target[2]))-(tf.sin(target[0])*tf.cos(target[2])), (tf.cos(target[0])*tf.sin(target[1])*tf.cos(target[2]))+(tf.sin(target[0])*tf.sin(target[2])), target[3],
+              tf.sin(target[0])*tf.cos(target[1]), (tf.sin(target[0])*tf.sin(target[1])*tf.sin(target[2]))+(tf.cos(target[0])*tf.cos(target[2])), (tf.sin(target[0])*tf.sin(target[1])*tf.cos(target[2]))-(tf.cos(target[0])*tf.sin(target[2])), target[4],
+              -tf.sin(target[1]),          tf.cos(pred[1])*tf.sin(target[2]),                                   tf.cos(target[1])*tf.cos(target[2]),                                   target[5],
+              target[0]*0,                 target[0]*0,                                                   target[0]*0,                                                 target[0]*0+1
            ], dtype=tf.float32, name='tMatT', trainable=False)
     # convert tMat's to correct form: 12 x batchSize -> batchSize x 12
     tMatP = tf.transpose(tMatP)
@@ -324,13 +326,18 @@ def train():
                     )
                 
         ######### USE LATEST STATE TO WARP IMAGES
+        outputDIR = modelParams['warpedOutputFolder']+'/'
+        
+
         durationSum = 0
         durationSumAll = 0
         if modelParams['writeWarpedImages']:
             lossValueSum = 0
-            stepsForOneDataRound = int((modelParams['numExamples']/modelParams['activeBatchSize']))+5
+            stepsForOneDataRound = int((modelParams['numExamples']/modelParams['activeBatchSize']))
             print('Warping %d images with batch size %d in %d steps' % (modelParams['numExamples'], modelParams['activeBatchSize'], stepsForOneDataRound))
-            for step in xrange(stepsForOneDataRound):
+            #for step in xrange(stepsForOneDataRound):
+            step = 0
+            while outputDirFileNum != 20400:
                 startTime = time.time()
                 evImages, evPclA, evPclB, evtargetT, evtargetP, evtfrecFileIDs, evlossValue = sess.run([images, pclA, pclB, targetT, targetP, tfrecFileIDs, loss])
                 #### put imageA, warpped imageB by pHAB, HAB-pHAB as new HAB, changed fileaddress tfrecFileIDs
@@ -344,6 +351,8 @@ def train():
                             ((100*step)/stepsForOneDataRound, evlossValue/(step+1), durationSum/60, (((durationSum*stepsForOneDataRound)/(step+1))/60)-(durationSum/60)))
                     #print('Total Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
                     #        durationSumAll/60, (((durationSumAll*stepsForOneDataRound)/(step+1))/60)-(durationSumAll/60))
+                outputDirFileNum = len([name for name in os.listdir(outputDIR) if os.path.isfile(os.path.join(outputDIR, name))])
+                step+=1
             print('Average training loss = %.2f - Average time per sample= %.2f s, Steps = %d' % (evlossValue/modelParams['activeBatchSize'], durationSum/(step*modelParams['activeBatchSize']), step))
 
 
