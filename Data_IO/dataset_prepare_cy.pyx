@@ -24,19 +24,19 @@ import tfrecord_io
 import kitti_shared as kitti
 
 # xyzi[0]/rXYZ out of [-1,1]  this is reveresd
-MIN_X_R = -1
-MAX_X_R = 1
+cdef double MIN_X_R = -1
+cdef double MAX_X_R = 1
 # xyzi[1]/rXYZ out of [-0.12,0.4097]  this is reveresd
-MIN_Y_R = -0.12
-MAX_Y_R = 0.4097
+cdef double MIN_Y_R = -0.12
+cdef double MAX_Y_R = 0.4097
 # Z in range [0.01, 100]
-MIN_Z = 0.01
-MAX_Z = 100
+cdef double MIN_Z = 0.01
+cdef double MAX_Z = 100
 
-IMG_ROWS = 64  # makes image of 2x64 = 128
-IMG_COLS = 512
-PCL_COLS = 62074 # All PCL files should have rows
-PCL_ROWS = 3
+cdef int IMG_ROWS = 64  # makes image of 2x64 = 128
+cdef int IMG_COLS = 512
+cdef int PCL_COLS = 62074 # All PCL files should have rows
+cdef int PCL_ROWS = 3
 
 def image_process_subMean_divStd(img):
     out = img - np.mean(img)
@@ -137,6 +137,7 @@ def _normalize_Z_weighted(z):
     0---20---40---60---80---100
      40%  25%  20%  --15%--- 
     '''
+    cdef int i
     for i in range(0, z.shape[0]):
         if z[i] < 20:
             z[i] = (0.4*z[i])/20
@@ -163,6 +164,7 @@ def _make_image(depthview, rXYZ):
     [-9.42337227   14.5816927   30.03821182  $ 0.42028627  $  34.69466782]
     [-1.5519526    -0.26304439  0.28228107   $ -0.16448526 $  1.59919727]
     '''
+    cdef int i
     ### Flatten to a plane
     depthview = _get_plane_view(depthview, rXYZ)
     ##### Project to image coordinates using histograms
@@ -191,6 +193,8 @@ def _make_image(depthview, rXYZ):
     # sorts ascending
     idxs = np.argsort(depthview[2], kind='mergesort')
     # assign range to pixels
+    cdef int yidx
+    cdef int xidx
     for i in range(depthview.shape[1]-1, -1, -1): # traverse descending
         yidx = np.argmin(np.abs(yCent-depthview[1, idxs[i]]))
         xidx = np.argmin(np.abs(xCent-depthview[0, idxs[i]]))
@@ -216,6 +220,7 @@ def get_depth_image_pano_pclView(xyzi, height=1.6):
     rXYZ = np.linalg.norm(xyzi, axis=0)
     xyzi = xyzi.transpose()
     first = True
+    cdef int i
     for i in range(xyzi.shape[0]):
         # xyzi[i][2] >= 0 means all the points who have depth larger than 0 (positive depth plane)
         if (xyzi[i][2] >= 0) and (xyzi[i][1] < height) and (rXYZ[i] > 0) and (xyzi[i][0]/rXYZ[i] > -1) and (xyzi[i][0]/rXYZ[i] < 1) and (xyzi[i][1]/rXYZ[i] > -0.12) and (xyzi[i][1]/rXYZ[i] < 0.4097): # frontal view & above ground & x in range & y in range
@@ -277,9 +282,9 @@ def _get_pcl_XYZ(filePath):
     Converting LiDAR coordinate system to Camera coordinate system for pose transform
     '''
     f = open(filePath, 'rb')
-    i = 0
-    j = 0
-    pclpoints = list()
+    cdef int i = 0
+    cdef int j = 0
+    cdef list pclpoints = list()
     # Camera: x = right, y = down, z = forward
     # Velodyne: x = forward, y = left, z = up
     # GPS/IMU: x = forward, y = left, z = up
@@ -391,9 +396,10 @@ def _get_file_names(readFolder):
     return filenames
 
 def prepare_dataset(datasetType, pclFolder, poseFolder, seqIDs, tfRecFolder):
-    durationSum = 0
+    cdef double durationSum = 0
+    cdef int i
     for i in range(len(seqIDs)):
-        print('Procseeing ', seqIDs[i])
+        print('Cython Processeing ', seqIDs[i])
         posePath = _get_pose_path(poseFolder, seqIDs[i])
         poseFile = _get_pose_data(posePath)
         print(posePath)
@@ -556,7 +562,7 @@ def prepare_dataset(datasetType, pclFolder, poseFolder, seqIDs, tfRecFolder):
 ### def find_max_PCL(datasetType, pclFolder, poseFolder, seqIDs):
 ###     durationSum = 0
 ###     for i in range(len(seqIDs)):
-###         print('Processeing ', seqIDs[i])
+###         print('Procseeing ', seqIDs[i])
 ###         posePath = _get_pose_path(poseFolder, seqIDs[i])
 ###         poseFile = _get_pose_data(posePath)
 ###         print(posePath)
@@ -577,11 +583,11 @@ def _set_folders(folderPath):
 
 pclPath = '../Data/kitti/pointcloud/'
 posePath = '../Data/kitti/poses/'
-seqIDtrain = ['00']#, '01', '02', '03', '04', '05', '06', '07', '08']#['00', '01', '02', '03', '04', '05', '06', '07', '08']
-seqIDtest = ['09', '10']
+cdef list seqIDtrain = ['00']#[, '01', '02', '03', '04', '05', '06', '07', '08']#['00', '01', '02', '03', '04', '05', '06', '07', '08']
+cdef list seqIDtest = ['09', '10']
 
-traintfRecordFLD = "../Data/kitti/train_tfrecords/"
-testtfRecordFLD = "../Data/kitti/test_tfrecords/"
+traintfRecordFLD = "../Data/kitti/train_tfrecordsX/"
+testtfRecordFLD = "../Data/kitti/test_tfrecordsX/"
 
 def main():
     #find_max_mins("train", pclPath, posePath, seqIDtrain)
