@@ -39,8 +39,9 @@ def _apply_prediction(pclA, targetT, targetP, **kwargs):
     depthImageA, _ = kitti.get_depth_image_pano_pclView(pclATransformed)
     pclATransformed = kitti._zero_pad(pclATransformed, kwargs.get('pclCols')-pclATransformed.shape[1])
     # get residual Target
-    #tMatResA2B = kitti.get_residual_tMat_A2B(targetT, targetP)
-    targetResP2T = targetT - targetP
+    tMatT = kitti._get_tmat_from_params(targetT) 
+    tMatResA2B = kitti.get_residual_tMat_A2B(tMatT.reshape([12]), tMatP.reshape([12]))
+    targetResP2T = kitti._get_params_from_tmat(tMatResA2B)
     return pclATransformed, targetResP2T, depthImageA
 
 def output(batchImages, batchPclA, batchPclB, bargetT, targetP, batchTFrecFileIDs, **kwargs):

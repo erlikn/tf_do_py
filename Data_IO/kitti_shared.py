@@ -103,10 +103,11 @@ def _remove_row4_tmat(pose4x4):
     return np.delete(pose4x4, pose4x4.shape[0]-1, 0)
 def get_residual_tMat_A2B(tMatT, tMatP):
     '''
+        Input: 3x4, 3x4
         To get residual transformation E:
         T = P x E => (P.inv) x T = (P.inv) x P x E => (P.inv) x T = I x E => (P.inv) x T = E
 
-        return E as residual tMat
+        return E as residual tMat 3x4
     '''
     # get tMat in the correct form
     tMatT = _add_row4_tmat(_get_3x4_tmat(tMatT))

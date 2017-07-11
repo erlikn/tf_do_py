@@ -14,11 +14,28 @@ import Data_IO.kitti_shared as kitti
 # import json_maker, update json files and read requested json file
 import Model_Settings.json_maker as json_maker
 json_maker.recompile_json_files()
-jsonToRead = '170706_ITR_B_1.json'
-print("Reading %s" % jsonToRead)
-with open('Model_Settings/'+jsonToRead) as data_file:
-    modelParams = json.load(data_file)
+jsonsToRead = ['170706_ITR_B_1.json',
+               '170706_ITR_B_2.json',
+               '170706_ITR_B_3.json']
 
+def read_model_params(jsonToRead):
+    print("Reading %s" % jsonToRead)
+    with open('Model_Settings/'+jsonToRead) as data_file:
+        modelParams = json.load(data_file)
+    _get_control_params(modelParams)
+    print('Evaluation phase for %s' % modelParams['phase'])
+    print('Ground truth input: %s' % modelParams['gTruthDir'])
+    if modelParams['phase'] == 'train':
+        print('Train sequences:', seqIDtrain)
+        print('Prediction input: %s' % modelParams['tMatDir'])
+    else:
+        print('Test sequences:' % seqIDtest)
+        print('Prediction Input: %s' % modelParams['tMatDir'])
+    print(modelParams['modelName'])
+    #if input("IS PRESENTED INFORMATION VALID? ") != "yes":
+    #    print("Please consider updating the provided information!")
+    #    return
+    return modelParams
 ############# SET PRINT PRECISION
 np.set_printoptions(precision=4, suppress=True)
 ############# STATE
@@ -35,7 +52,7 @@ def _get_file_names(readFolder, fileFormat):
     filenames = [f for f in listdir(readFolder) if (isfile(join(readFolder, f)) and fileFormat in f)]
     return filenames
 
-def _get_all_predictions(pFilenames):
+def _get_all_predictions(pFilenames, modelParams):
     """
     read all predictions of all sequences to a list
     """
@@ -52,10 +69,10 @@ def _get_all_predictions(pFilenames):
         predAllList.append(seqList)
     return predAllList
 
-def _get_pose_from_param(pPoseParam):
+def _get_pose_from_param(pParam):
     poses = list()
-    for i in range(len(pPoseParam)):
-        pposep = pPoseParam[i]['tmat']
+    for i in range(pParam.shape[0]):
+        pposep = pParam[i]
         #print(pposep)
         poses.append(kitti._get_tmat_from_params(pposep).reshape(3*4))
     return poses
@@ -218,7 +235,7 @@ def _get_p_map_w_orig_points(pPoseAB, gPose2o):
     #### PathMap consists of all points in the origin frame coordinates
     return pathMap
 
-def _get_control_params():
+def _get_control_params(modelParams):
     """
     Get control parameters for the specific task
     """
@@ -245,11 +262,13 @@ def _get_control_params():
         modelParams['warpedOutputFolder'] = modelParams['warpedTestDataDir']
         modelParams['tMatDir'] = modelParams['tMatTestDir']
         modelParams['seqIDs'] = seqIDtest
+    return modelParams
 
-def evaluate():
+def evaluate(modelParams, prevPParam=list()):
     # Read all prediction posefiles and sort them based on the seqID and frameID
     pFilenames = _get_file_names(modelParams['tMatDir'], "")
-    predPoses = _get_all_predictions(pFilenames)
+    predPoses = _get_all_predictions(pFilenames, modelParams)
+    pParamList = list()
     # For each sequence
     for i in range(len(modelParams['seqIDs'])):
         print("Processing sequences: {0} / {1}".format(i, len(modelParams['seqIDs'])))
@@ -272,11 +291,15 @@ def evaluate():
         pPoseParam = _get_prediction(predPoses, modelParams['seqIDs'][i])
         print("Pred params count:", len(pPoseParam))
         pParam = list()
-        for i in range(len(pPoseParam)):
-            pParam.append(pPoseParam[i]['tmat'])
-        print("Abs error:", np.sum(np.abs(np.array(pParam)-np.array(gtParam)), axis=0))
-        print("+/- error:", np.sum((np.array(pParam)-np.array(gtParam)), axis=0))
-        pPose = _get_pose_from_param(pPoseParam)
+        for j in range(len(pPoseParam)):
+            pParam.append(pPoseParam[j]['tmat'])
+        pParam = np.array(pParam)
+        print("Abs error:", np.sum(np.abs(pParam-np.array(gtParam)), axis=0))
+        print("+/- error:", np.sum((pParam-np.array(gtParam)), axis=0))
+        if (len(prevPParam) != 0):
+            pParam = pParam + prevPParam[i]
+        pParamList.append(pParam)
+        pPose = _get_pose_from_param(pParam)
         # Use only sequential
         pMapSeq = _get_p_map_w_orig(pPose, gtPose)
         # Use GTforLoc
@@ -284,7 +307,7 @@ def evaluate():
         
         # Visualize both
         vis_path_all(gtMapOrig, pMapSeq, pMapSeqWgtFrames, ['GT', 'PredSeq', 'PredSeqWgtFrames'])
-
+    return pParamList
 ################################
 def vis_path_all(gtxyz, p1xyz, p2xyz, legendNamesx3):
     import matplotlib.pyplot as plt
@@ -302,19 +325,15 @@ def vis_path(xyz, graphType=""):
 
 
 def main(argv=None):  # pylint: disable=unused-argumDt
-    _get_control_params()
-    print('Evaluation phase for %s' % modelParams['phase'])
-    print('Ground truth input: %s' % modelParams['gTruthDir'])
-    if modelParams['phase'] == 'train':
-        print('Train sequences:', seqIDtrain)
-        print('Prediction input: %s' % modelParams['tMatDir'])
-    else:
-        print('Test sequences:' % seqIDtest)
-        print('Prediction Input: %s' % modelParams['tMatDir'])
-    print(modelParams['modelName'])
-    #if input("IS PRESENTED INFORMATION VALID? ") != "yes":
-    #    print("Please consider updating the provided information!")
-    #    return
-    evaluate()
-
+    modelParams = read_model_params(jsonsToRead[0])
+    prevPred = evaluate(modelParams)
+    if (len(jsonsToRead)>1):
+        modelParams = read_model_params(jsonsToRead[1])
+        prevPred = evaluate(modelParams, prevPred)
+    if (len(jsonsToRead)>2):
+        modelParams = read_model_params(jsonsToRead[2])
+        prevPred = evaluate(modelParams, prevPred)
+    if (len(jsonsToRead)>3):
+        modelParams = read_model_params(jsonsToRead[3])
+        prevPred = evaluate(modelParams, prevPred)
 main()
