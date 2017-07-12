@@ -151,11 +151,9 @@ def write_iterative():
     itr_170622_ITR_B(reCompileITR, trainLogDirBase, testLogDirBase)
     itr_170628_ITR_B(reCompileITR, trainLogDirBase, testLogDirBase)
     itr_170706_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase)
-<<<<<<< HEAD
     itr_170710_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase)
-=======
-    itr_170709_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase)
->>>>>>> 1991ae4cc5a6d219f08ee6c91d7cef5f50db5cb3
+    itr_170711_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase)
+    itr_170712_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase)
     ##############
     ##############
     ##############
@@ -163,6 +161,8 @@ def write_iterative():
 def itr_170523_ITR_B(reCompileITR, trainLogDirBase, testLogDirBase):
     if reCompileITR:
         data['modelName'] = 'twin_cnn_4p4l2f'
+        data['numParallelModules'] = 2
+        data['imageDepthChannels'] = 2
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
         runName = '170523_ITR_B_1'
@@ -242,6 +242,8 @@ def itr_170523_ITR_B(reCompileITR, trainLogDirBase, testLogDirBase):
 def itr_170622_ITR_B(reCompileITR, trainLogDirBase, testLogDirBase):
     if reCompileITR:
         data['modelName'] = 'twin_cnn_4p4l2f'
+        data['imageDepthChannels'] = 2
+        data['numParallelModules'] = 2
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
         runName = '170622_ITR_B_1'
@@ -320,6 +322,8 @@ def itr_170622_ITR_B(reCompileITR, trainLogDirBase, testLogDirBase):
 def itr_170628_ITR_B(reCompileITR, trainLogDirBase, testLogDirBase):
     if reCompileITR:
         data['modelName'] = 'twin_cnn_6p6l2f'
+        data['imageDepthChannels'] = 2
+        data['numParallelModules'] = 2
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
         runName = '170628_ITR_B_1'
@@ -397,6 +401,8 @@ def itr_170628_ITR_B(reCompileITR, trainLogDirBase, testLogDirBase):
 def itr_170706_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
     if reCompileITR:
         data['modelName'] = 'twin_cnn_4p4l2f_inception'
+        data['numParallelModules'] = 2
+        data['imageDepthChannels'] = 2
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
         runName = '170706_ITR_B_1'
@@ -471,21 +477,15 @@ def itr_170706_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
         data['batchNorm'] = True
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
-<<<<<<< HEAD
-def itr_170710_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
-=======
 
-def itr_170709_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
->>>>>>> 1991ae4cc5a6d219f08ee6c91d7cef5f50db5cb3
+def itr_170710_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
     if reCompileITR:
         data['modelName'] = 'twin_cnn_4p4l2f_inception'
+        data['numParallelModules'] = 2
+        data['imageDepthChannels'] = 2
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
         ### ITERATION 1
-<<<<<<< HEAD
         runName = '170710_ITR_B_1'
-=======
-        runName = '170709_ITR_B_1'
->>>>>>> 1991ae4cc5a6d219f08ee6c91d7cef5f50db5cb3
         data['trainDataDir'] = '../Data/kitti/train_tfrecords'
         data['testDataDir'] = '../Data/kitti/test_tfrecords'
         data['trainLogDir'] = trainLogDirBase + runName
@@ -499,20 +499,12 @@ def itr_170709_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
         data['warpOriginalImage'] = True
-<<<<<<< HEAD
         data['modelShape'] = [32, 64, 32, 64, 64, 128, 64, 128, 1024]
-=======
-        data['modelShape'] = [16, 32, 16, 32, 32, 64, 32, 64, 1024]
->>>>>>> 1991ae4cc5a6d219f08ee6c91d7cef5f50db5cb3
         data['batchNorm'] = True
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
         ### ITERATION 2
-<<<<<<< HEAD
         runName = '170710_ITR_B_2'
-=======
-        runName = '170709_ITR_B_2'
->>>>>>> 1991ae4cc5a6d219f08ee6c91d7cef5f50db5cb3
         data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
@@ -525,20 +517,12 @@ def itr_170709_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
         data['tMatTestDir'] = data['testLogDir']+'/target'
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
-<<<<<<< HEAD
         data['modelShape'] = [32, 64, 32, 64, 64, 128, 64, 128, 1024]
-=======
-        data['modelShape'] = [16, 32, 16, 32, 32, 64, 32, 64, 1024]
->>>>>>> 1991ae4cc5a6d219f08ee6c91d7cef5f50db5cb3
         data['batchNorm'] = True
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
         ### ITERATION 3
-<<<<<<< HEAD
         runName = '170710_ITR_B_3'
-=======
-        runName = '170709_ITR_B_3'
->>>>>>> 1991ae4cc5a6d219f08ee6c91d7cef5f50db5cb3
         data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
@@ -551,20 +535,12 @@ def itr_170709_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
         data['tMatTestDir'] = data['testLogDir']+'/target'
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
-<<<<<<< HEAD
         data['modelShape'] = [32, 64, 32, 64, 64, 128, 64, 128, 1024]
-=======
-        data['modelShape'] = [16, 32, 16, 32, 32, 64, 32, 64, 1024]
->>>>>>> 1991ae4cc5a6d219f08ee6c91d7cef5f50db5cb3
         data['batchNorm'] = True
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
         ### ITERATION 4
-<<<<<<< HEAD
         runName = '170710_ITR_B_4'
-=======
-        runName = '170709_ITR_B_4'
->>>>>>> 1991ae4cc5a6d219f08ee6c91d7cef5f50db5cb3
         data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
@@ -577,11 +553,165 @@ def itr_170709_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
         data['tMatTestDir'] = data['testLogDir']+'/target'
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
-<<<<<<< HEAD
         data['modelShape'] = [32, 64, 32, 64, 64, 128, 64, 128, 1024]
-=======
-        data['modelShape'] = [16, 32, 16, 32, 32, 64, 32, 64, 1024]
->>>>>>> 1991ae4cc5a6d219f08ee6c91d7cef5f50db5cb3
+        data['batchNorm'] = True
+        data['weightNorm'] = False
+        write_json_file(runName+'.json', data)
+def itr_170711_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
+    if reCompileITR:
+        data['modelName'] = 'twin_cnn_4p4l2f_inception'
+        data['numParallelModules'] = 3
+        data['imageDepthChannels'] = 3
+        data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
+        ### ITERATION 1
+        runName = '170711_ITR_B_1'
+        data['trainDataDir'] = '../Data/kitti/train_tfrecords'
+        data['testDataDir'] = '../Data/kitti/test_tfrecords'
+        data['trainLogDir'] = trainLogDirBase + runName
+        data['testLogDir'] = testLogDirBase + runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
+        _set_folders(data['warpedTrainDataDir'])
+        _set_folders(data['warpedTestDataDir'])
+        data['tMatTrainDir'] = data['trainLogDir']+'/target'
+        data['tMatTestDir'] = data['testLogDir']+'/target'
+        _set_folders(data['tMatTrainDir'])
+        _set_folders(data['tMatTestDir'])
+        data['warpOriginalImage'] = True
+        data['modelShape'] = [3*8, 3*16, 3*8, 3*16, 64, 128, 64, 128, 1024] 
+        data['batchNorm'] = True
+        data['weightNorm'] = False
+        write_json_file(runName+'.json', data)
+        ### ITERATION 2
+        runName = '170711_ITR_B_2'
+        data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
+        data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
+        data['trainLogDir'] = trainLogDirBase + runName
+        data['testLogDir'] = testLogDirBase + runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
+        _set_folders(data['warpedTrainDataDir'])
+        _set_folders(data['warpedTestDataDir'])
+        data['tMatTrainDir'] = data['trainLogDir']+'/target'
+        data['tMatTestDir'] = data['testLogDir']+'/target'
+        _set_folders(data['tMatTrainDir'])
+        _set_folders(data['tMatTestDir'])
+        data['modelShape'] = [3*8, 3*16, 3*8, 3*16, 64, 128, 64, 128, 1024] 
+        data['batchNorm'] = True
+        data['weightNorm'] = False
+        write_json_file(runName+'.json', data)
+        ### ITERATION 3
+        runName = '170711_ITR_B_3'
+        data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
+        data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
+        data['trainLogDir'] = trainLogDirBase + runName
+        data['testLogDir'] = testLogDirBase + runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
+        _set_folders(data['warpedTrainDataDir'])
+        _set_folders(data['warpedTestDataDir'])
+        data['tMatTrainDir'] = data['trainLogDir']+'/target'
+        data['tMatTestDir'] = data['testLogDir']+'/target'
+        _set_folders(data['tMatTrainDir'])
+        _set_folders(data['tMatTestDir'])
+        data['modelShape'] = [3*8, 3*16, 3*8, 3*16, 64, 128, 64, 128, 1024] 
+        data['batchNorm'] = True
+        data['weightNorm'] = False
+        write_json_file(runName+'.json', data)
+        ### ITERATION 4
+        runName = '170711_ITR_B_4'
+        data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
+        data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
+        data['trainLogDir'] = trainLogDirBase + runName
+        data['testLogDir'] = testLogDirBase + runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
+        _set_folders(data['warpedTrainDataDir'])
+        _set_folders(data['warpedTestDataDir'])
+        data['tMatTrainDir'] = data['trainLogDir']+'/target'
+        data['tMatTestDir'] = data['testLogDir']+'/target'
+        _set_folders(data['tMatTrainDir'])
+        _set_folders(data['tMatTestDir'])
+        data['modelShape'] = [3*8, 3*16, 3*8, 3*16, 64, 128, 64, 128, 1024] 
+        data['batchNorm'] = True
+        data['weightNorm'] = False
+        write_json_file(runName+'.json', data)
+def itr_170712_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
+    if reCompileITR:
+        data['modelName'] = 'twin_cnn_4p4l2f_inception'
+        data['numParallelModules'] = 3
+        data['imageDepthChannels'] = 3
+        data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
+        ### ITERATION 1
+        runName = '170712_ITR_B_1'
+        data['trainDataDir'] = '../Data/kitti/train_tfrecords'
+        data['testDataDir'] = '../Data/kitti/test_tfrecords'
+        data['trainLogDir'] = trainLogDirBase + runName
+        data['testLogDir'] = testLogDirBase + runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
+        _set_folders(data['warpedTrainDataDir'])
+        _set_folders(data['warpedTestDataDir'])
+        data['tMatTrainDir'] = data['trainLogDir']+'/target'
+        data['tMatTestDir'] = data['testLogDir']+'/target'
+        _set_folders(data['tMatTrainDir'])
+        _set_folders(data['tMatTestDir'])
+        data['warpOriginalImage'] = True
+        data['modelShape'] = [3*8, 3*16, 3*8, 3*16, 64, 128, 64, 128, 1024] 
+        data['batchNorm'] = True
+        data['weightNorm'] = False
+        write_json_file(runName+'.json', data)
+        ### ITERATION 2
+        runName = '170712_ITR_B_2'
+        data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
+        data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
+        data['trainLogDir'] = trainLogDirBase + runName
+        data['testLogDir'] = testLogDirBase + runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
+        _set_folders(data['warpedTrainDataDir'])
+        _set_folders(data['warpedTestDataDir'])
+        data['tMatTrainDir'] = data['trainLogDir']+'/target'
+        data['tMatTestDir'] = data['testLogDir']+'/target'
+        _set_folders(data['tMatTrainDir'])
+        _set_folders(data['tMatTestDir'])
+        data['modelShape'] = [3*8, 3*16, 3*8, 3*16, 64, 128, 64, 128, 1024] 
+        data['batchNorm'] = True
+        data['weightNorm'] = False
+        write_json_file(runName+'.json', data)
+        ### ITERATION 3
+        runName = '170712_ITR_B_3'
+        data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
+        data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
+        data['trainLogDir'] = trainLogDirBase + runName
+        data['testLogDir'] = testLogDirBase + runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
+        _set_folders(data['warpedTrainDataDir'])
+        _set_folders(data['warpedTestDataDir'])
+        data['tMatTrainDir'] = data['trainLogDir']+'/target'
+        data['tMatTestDir'] = data['testLogDir']+'/target'
+        _set_folders(data['tMatTrainDir'])
+        _set_folders(data['tMatTestDir'])
+        data['modelShape'] = [3*8, 3*16, 3*8, 3*16, 64, 128, 64, 128, 1024] 
+        data['batchNorm'] = True
+        data['weightNorm'] = False
+        write_json_file(runName+'.json', data)
+        ### ITERATION 4
+        runName = '170712_ITR_B_4'
+        data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
+        data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
+        data['trainLogDir'] = trainLogDirBase + runName
+        data['testLogDir'] = testLogDirBase + runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
+        _set_folders(data['warpedTrainDataDir'])
+        _set_folders(data['warpedTestDataDir'])
+        data['tMatTrainDir'] = data['trainLogDir']+'/target'
+        data['tMatTestDir'] = data['testLogDir']+'/target'
+        _set_folders(data['tMatTrainDir'])
+        _set_folders(data['tMatTestDir'])
+        data['modelShape'] = [3*8, 3*16, 3*8, 3*16, 64, 128, 64, 128, 1024] 
         data['batchNorm'] = True
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)

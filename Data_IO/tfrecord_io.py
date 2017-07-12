@@ -103,6 +103,50 @@ def parse_example_proto(exampleSerialized, **kwargs):
     pclB = _get_pcl(features['pclB'], kwargs.get('pclRows'), kwargs.get('pclCols'))
     target = features['targetABGXYZ']
 
+def parse_example_proto_DIFF(exampleSerialized, **kwargs):
+    """
+        ID: python list with size 2
+        pclA: numpy matrix of size 3xPCL_COLS
+        pclB: numpy matrix of size 3xPCL_COLS
+        image: numpy matrix of 128x512x2
+            imgDepthA: numpy matrix of size 128x512
+            imgDepthB: numpy matrix of size 128x512
+        targetABGXYZ: numpy matrix of size 3x4 = 12
+
+        'ID': _int64_feature(IDList),
+        'pclA': _float_nparray(pclAList),
+        'pclB': _float_nparray(pclBList),
+        'image': _bytes_feature(flatImageList)
+        'targetABGXYZ': _float_nparray(targetList), # 2D np array
+    """
+    """
+    KWARGS:
+        imageDepthRows = 128
+        imageDepthCols = 512
+        imageDepthChannels = 2
+
+        pclRows = 3
+        pclCols = 62074
+
+        targetABGXYZ = 6
+    """
+    featureMap = {
+        'fileID': tf.FixedLenFeature([3], dtype=tf.int64),
+        'images': tf.FixedLenFeature([], dtype=tf.string),
+        'pclA': tf.FixedLenFeature([kwargs.get('pclRows')*kwargs.get('pclCols')], dtype=tf.float32),
+        'pclB': tf.FixedLenFeature([kwargs.get('pclRows')*kwargs.get('pclCols')], dtype=tf.float32),
+        'targetABGXYZ': tf.FixedLenFeature([6], dtype=tf.float32)
+        }
+    features = tf.parse_single_example(exampleSerialized, featureMap)
+    fileID = features['fileID']
+    images = _decode_byte_image(features['images'],
+                                kwargs.get('imageDepthRows'),
+                                kwargs.get('imageDepthCols'),
+                                kwargs.get('imageDepthChannels')-1)
+    pclA = _get_pcl(features['pclA'], kwargs.get('pclRows'), kwargs.get('pclCols'))
+    pclB = _get_pcl(features['pclB'], kwargs.get('pclRows'), kwargs.get('pclCols'))
+    target = features['targetABGXYZ']
+
     # PCLs will hold padded [0, 0, 0, 0] points at the end that will be ignored during usage
     # However, they will be kept to unify matrix col size for valid tensor operations 
     return images, pclA, pclB, target, fileID
