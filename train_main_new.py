@@ -324,10 +324,15 @@ def train():
                             datetime.now()
                         )
                     )
-                
+        print("\nTraining completed.....\n------------------------------\n------------------------------\n-------------------------------\n")
         ######### USE LATEST STATE TO WARP IMAGES
         outputDIR = modelParams['warpedOutputFolder']+'/'
+        print("Using final training state to output processed tfrecords\noutput folder: ", outputDIR)
+        if tf.gfile.Exists(outputDIR):
+            tf.gfile.DeleteRecursively(outputDIR)
+        tf.gfile.MakeDirs(outputDIR)
         outputDirFileNum = len([name for name in os.listdir(outputDIR) if os.path.isfile(os.path.join(outputDIR, name))])
+        #outputDirFileNum = 0
 
         durationSum = 0
         durationSumAll = 0
