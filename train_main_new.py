@@ -133,7 +133,7 @@ def weighted_params_loss(targetP, targetT, **kwargs):
     #targetP = tf_mod(targetP, mask)
     #targetT = tf_mod(targetT, mask)
     # Importance weigting on angles as they have smaller values
-    mask = np.array([[1000, 1000, 1000, 100, 100, 100]], dtype=np.float32)
+    mask = np.array([[100, 100, 100, 1, 1, 1]], dtype=np.float32)
     mask = np.repeat(mask, kwargs.get('activeBatchSize'), axis=0)
     targetP = tf.multiply(targetP, mask)
     targetT = tf.multiply(targetT, mask)
@@ -289,7 +289,7 @@ def train():
         print('Training     started')
         durationSum = 0
         durationSumAll = 0
-        for step in xrange(modelParams['maxSteps']):
+        for step in xrange(2):#modelParams['maxSteps']):
             startTime = time.time()
             _, lossValue = sess.run([opTrain, loss])
             duration = time.time() - startTime
@@ -353,6 +353,7 @@ def train():
                     #        durationSumAll/60, (((durationSumAll*stepsForOneDataRound)/(step+1))/60)-(durationSumAll/60))
                 outputDirFileNum = len([name for name in os.listdir(outputDIR) if os.path.isfile(os.path.join(outputDIR, name))])
                 step+=1
+            print('OUTPUTDIRFILENUM', outputDirFileNum)
             print('Average training loss = %.2f - Average time per sample= %.2f s, Steps = %d' % (evlossValue/modelParams['activeBatchSize'], durationSum/(step*modelParams['activeBatchSize']), step))
 
 
