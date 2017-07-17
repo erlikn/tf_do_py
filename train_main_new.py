@@ -38,7 +38,7 @@ with open('Model_Settings/'+jsonToRead) as data_file:
 
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 from tensorflow.python.client import device_lib
 print(device_lib.list_local_devices())
@@ -289,7 +289,7 @@ def train():
         print('Training     started')
         durationSum = 0
         durationSumAll = 0
-        for step in xrange(2):#modelParams['maxSteps']):
+        for step in xrange(modelParams['maxSteps']):
             startTime = time.time()
             _, lossValue = sess.run([opTrain, loss])
             duration = time.time() - startTime
@@ -353,7 +353,6 @@ def train():
                     #        durationSumAll/60, (((durationSumAll*stepsForOneDataRound)/(step+1))/60)-(durationSumAll/60))
                 outputDirFileNum = len([name for name in os.listdir(outputDIR) if os.path.isfile(os.path.join(outputDIR, name))])
                 step+=1
-            print('OUTPUTDIRFILENUM', outputDirFileNum)
             print('Average training loss = %.2f - Average time per sample= %.2f s, Steps = %d' % (evlossValue/modelParams['activeBatchSize'], durationSum/(step*modelParams['activeBatchSize']), step))
 
 
