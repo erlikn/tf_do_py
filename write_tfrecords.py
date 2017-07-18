@@ -97,7 +97,7 @@ def weighted_params_loss(targetP, targetT, **kwargs):
     #targetP = tf_mod(targetP, mask)
     #targetT = tf_mod(targetT, mask)
     # Importance weigting on angles as they have smaller values
-    mask = np.array([[1000, 1000, 1000, 100, 100, 100]], dtype=np.float32)
+    mask = np.array([[100, 100, 100, 1, 1, 1]], dtype=np.float32)
     mask = np.repeat(mask, kwargs.get('activeBatchSize'), axis=0)
     targetP = tf.multiply(targetP, mask)
     targetT = tf.multiply(targetT, mask)
@@ -179,12 +179,12 @@ def pcl_params_loss(pclA, pred, target, **kwargs): # batchSize=Sne
 ####################################################
 ####################################################
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_integer('printOutStep', 10,
-                            """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('summaryWriteStep', 10,
-                            """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('modelCheckpointStep', 100,
-                            """Number of batches to run.""")
+#tf.app.flags.DEFINE_integer('printOutStep', 10,
+#                            """Number of batches to run.""")
+#tf.app.flags.DEFINE_integer('summaryWriteStep', 10,
+#                            """Number of batches to run.""")
+#tf.app.flags.DEFINE_integer('modelCheckpointStep', 100,
+#                            """Number of batches to run.""")
 tf.app.flags.DEFINE_integer('ProgressStepReportStep', 20,
                             """Number of batches to run.""")
 ####################################################
@@ -272,6 +272,7 @@ def train():
         print('Write        started')
 
         ######### USE LATEST STATE TO WARP IMAGES
+        filesDictionaryAccum = {}
         durationSum = 0
         durationSumAll = 0
         if modelParams['writeWarpedImages']:
@@ -281,6 +282,12 @@ def train():
             for step in xrange(stepsForOneDataRound):
                 startTime = time.time()
                 evImages, evPclA, evPclB, evtargetT, evtargetP, evtfrecFileIDs, evlossValue = sess.run([images, pclA, pclB, targetT, targetP, tfrecFileIDs, loss])
+                for fileIdx in range(modelParams['activeBatchSize']):
+                    fileIDname = str(evtfrecFileIDs[fileIdx][0]) + "_" + str(evtfrecFileIDs[fileIdx][1]) + "_" + str(evtfrecFileIDs[fileIdx][2])
+                    if (fileIDname in filesDictionaryAccum):
+                        filesDictionaryAccum[fileIDname]+=1
+                    else:
+                        filesDictionaryAccum[fileIDname]=1
                 #### put imageA, warpped imageB by pHAB, HAB-pHAB as new HAB, changed fileaddress tfrecFileIDs
                 data_output.output(evImages, evPclA, evPclB, evtargetT, evtargetP, evtfrecFileIDs, **modelParams)
                 duration = time.time() - startTime
@@ -288,6 +295,7 @@ def train():
                 durationSumAll += duration
                 # Print Progress Info
                 if ((step % FLAGS.ProgressStepReportStep) == 0) or ((step+1) == stepsForOneDataRound):
+                    print('Number of files used in training', len(filesDictionaryAccum))
                     print('Progress: %.2f%%, Loss: %.2f, Elapsed: %.2f mins, Training Completion in: %.2f mins --- %s' % 
                             (
                                 (100*step)/stepsForOneDataRound,
@@ -297,7 +305,9 @@ def train():
                             )
                         )
                     #print('Total Elapsed: %.2f mins, Total Completion in: %.2f mins' % (durationSumAll/60), ((((durationSumAll*stepsForOneDataRound)/(step+1))/60)-(durationSumAll/60)) )
-
+            print('Number of files used in training', len(filesDictionaryAccum))
+            filesAccum = np.array(list(filesDictionaryAccum.values()))
+            print('Access statistics for each file, mean max min std', np.mean(filesAccum), np.max(filesAccum), np.min(filesAccum), np.std(filesAccum))
             print('Average training loss = %.2f - Average time per sample= %.2f s, Steps = %d' % (evlossValue/modelParams['activeBatchSize'], durationSum/(step*modelParams['activeBatchSize']), step))
 
 

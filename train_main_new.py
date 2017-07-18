@@ -31,7 +31,7 @@ PHASE = 'train'
 # import json_maker, update json files and read requested json file
 import Model_Settings.json_maker as json_maker
 json_maker.recompile_json_files()
-jsonToRead = '170711_ITR_B_1.json'
+jsonToRead = '170711_ITR_B_2.json'
 print("Reading %s" % jsonToRead)
 with open('Model_Settings/'+jsonToRead) as data_file:
     modelParams = json.load(data_file)
@@ -59,9 +59,9 @@ tf.app.flags.DEFINE_integer('summaryWriteStep', 100,
                             """Number of batches to run.""")
 tf.app.flags.DEFINE_integer('modelCheckpointStep', 1000,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('ProgressStepReportStep', 250,
+tf.app.flags.DEFINE_integer('ProgressStepReportStep', 100,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('ProgressStepReportOutputWrite', 250,
+tf.app.flags.DEFINE_integer('ProgressStepReportOutputWrite', 25,
                             """Number of batches to run.""")
 ####################################################
 ####################################################
@@ -287,11 +287,18 @@ def train():
         summaryWriter = tf.summary.FileWriter(modelParams['trainLogDir'], sess.graph)
         
         print('Training     started')
+        filesDictionaryAccumTrain = {}
         durationSum = 0
         durationSumAll = 0
         for step in xrange(modelParams['maxSteps']):
             startTime = time.time()
-            _, lossValue = sess.run([opTrain, loss])
+            _, evtfrecFileIDs, lossValue = sess.run([opTrain, tfrecFileIDs, loss])
+            for fileIdx in range(modelParams['activeBatchSize']):
+                    fileIDname = str(evtfrecFileIDs[fileIdx][0]) + "_" + str(evtfrecFileIDs[fileIdx][1]) + "_" + str(evtfrecFileIDs[fileIdx][2])
+                    if (fileIDname in filesDictionaryAccumTrain):
+                        filesDictionaryAccumTrain[fileIDname]+=1
+                    else:
+                        filesDictionaryAccumTrain[fileIDname]=1
             duration = time.time() - startTime
             durationSum += duration
             assert not np.isnan(lossValue), 'Model diverged with loss = NaN'
@@ -316,6 +323,7 @@ def train():
 
             # Print Progress Info
             if ((step % FLAGS.ProgressStepReportStep) == 0) or ((step+1) == modelParams['maxSteps']):
+                print('Number of files used in training', len(filesDictionaryAccumTrain))
                 print('Progress: %.2f%%, Elapsed: %.2f mins, Training Completion in: %.2f mins --- %s' %
                         (
                             (100*step)/modelParams['maxSteps'],
@@ -324,6 +332,10 @@ def train():
                             datetime.now()
                         )
                     )
+        print('Number of files used in training', len(filesDictionaryAccumTrain))
+        filesAccum = np.array(list(filesDictionaryAccumTrain.values()))
+        print('Access statistics for each file, mean max min std', np.mean(filesAccum), np.max(filesAccum), np.min(filesAccum), np.std(filesAccum))
+
         print("\nTraining completed.....\n------------------------------\n------------------------------\n-------------------------------\n")
         ######### USE LATEST STATE TO WARP IMAGES
         outputDIR = modelParams['warpedOutputFolder']+'/'
@@ -333,18 +345,25 @@ def train():
         tf.gfile.MakeDirs(outputDIR)
         outputDirFileNum = len([name for name in os.listdir(outputDIR) if os.path.isfile(os.path.join(outputDIR, name))])
         #outputDirFileNum = 0
-
+        filesDictionaryAccum = {}
         durationSum = 0
         durationSumAll = 0
-        if modelParams['writeWarpedImages']:
+        #if modelParams['writeWarpedImages']:
+        if False:
             lossValueSum = 0
             stepsForOneDataRound = int((modelParams['numExamples']/modelParams['activeBatchSize']))
             print('Warping %d images with batch size %d in %d steps' % (modelParams['numExamples'], modelParams['activeBatchSize'], stepsForOneDataRound))
-            #for step in xrange(stepsForOneDataRound):
-            step = 0
-            while outputDirFileNum != 20400:
+            for step in xrange(stepsForOneDataRound):
+            #step = 0
+            #while outputDirFileNum != 20400:
                 startTime = time.time()
                 evImages, evPclA, evPclB, evtargetT, evtargetP, evtfrecFileIDs, evlossValue = sess.run([images, pclA, pclB, targetT, targetP, tfrecFileIDs, loss])
+                for fileIdx in range(modelParams['activeBatchSize']):
+                    fileIDname = str(evtfrecFileIDs[fileIdx][0]) + "_" + str(evtfrecFileIDs[fileIdx][1]) + "_" + str(evtfrecFileIDs[fileIdx][2])
+                    if (fileIDname in filesDictionaryAccum):
+                        filesDictionaryAccum[fileIDname]+=1
+                    else:
+                        filesDictionaryAccum[fileIDname]=1
                 #### put imageA, warpped imageB by pHAB, HAB-pHAB as new HAB, changed fileaddress tfrecFileIDs
                 data_output.output(evImages, evPclA, evPclB, evtargetT, evtargetP, evtfrecFileIDs, **modelParams)
                 duration = time.time() - startTime
@@ -352,12 +371,20 @@ def train():
                 durationSumAll += duration
                 # Print Progress Info
                 if ((step % FLAGS.ProgressStepReportOutputWrite) == 0) or ((step+1) == stepsForOneDataRound):
+                    print('Number of files used in training', len(filesDictionaryAccum))
                     print('Progress: %.2f%%, Loss: %.2f, Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
                             ((100*step)/stepsForOneDataRound, evlossValue/(step+1), durationSum/60, (((durationSum*stepsForOneDataRound)/(step+1))/60)-(durationSum/60)))
                     #print('Total Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
                     #        durationSumAll/60, (((durationSumAll*stepsForOneDataRound)/(step+1))/60)-(durationSumAll/60))
                 outputDirFileNum = len([name for name in os.listdir(outputDIR) if os.path.isfile(os.path.join(outputDIR, name))])
-                step+=1
+                #step+=1
+            print('Write steps, one round steps', step, stepsForOneDataRound)
+            print('Number of files used in training', len(filesDictionaryAccumTrain))
+            filesAccum = np.array(list(filesDictionaryAccumTrain.values()))
+            print('Training access statistics for each file, mean max min std', np.mean(filesAccum), np.max(filesAccum), np.min(filesAccum), np.std(filesAccum))
+            print('Number of files used in training', len(filesDictionaryAccum))
+            filesAccum = np.array(list(filesDictionaryAccum.values()))
+            print('Write access statistics for each file, mean max min std', np.mean(filesAccum), np.max(filesAccum), np.min(filesAccum), np.std(filesAccum))
             print('Average training loss = %.2f - Average time per sample= %.2f s, Steps = %d' % (evlossValue/modelParams['activeBatchSize'], durationSum/(step*modelParams['activeBatchSize']), step))
 
 
