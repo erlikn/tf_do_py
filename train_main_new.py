@@ -338,18 +338,17 @@ def train():
 
         print("\nTraining completed.....\n------------------------------\n------------------------------\n-------------------------------\n")
         ######### USE LATEST STATE TO WARP IMAGES
-        outputDIR = modelParams['warpedOutputFolder']+'/'
-        print("Using final training state to output processed tfrecords\noutput folder: ", outputDIR)
-        if tf.gfile.Exists(outputDIR):
-            tf.gfile.DeleteRecursively(outputDIR)
-        tf.gfile.MakeDirs(outputDIR)
-        outputDirFileNum = len([name for name in os.listdir(outputDIR) if os.path.isfile(os.path.join(outputDIR, name))])
+        #outputDirFileNum = len([name for name in os.listdir(outputDIR) if os.path.isfile(os.path.join(outputDIR, name))])
         #outputDirFileNum = 0
         filesDictionaryAccum = {}
         durationSum = 0
         durationSumAll = 0
-        #if modelParams['writeWarpedImages']:
-        if False:
+        if modelParams['writeWarpedImages']:
+            outputDIR = modelParams['warpedOutputFolder']+'/'
+            print("Using final training state to output processed tfrecords\noutput folder: ", outputDIR)
+            if tf.gfile.Exists(outputDIR):
+                tf.gfile.DeleteRecursively(outputDIR)
+            tf.gfile.MakeDirs(outputDIR)
             lossValueSum = 0
             stepsForOneDataRound = int((modelParams['numExamples']/modelParams['activeBatchSize']))
             print('Warping %d images with batch size %d in %d steps' % (modelParams['numExamples'], modelParams['activeBatchSize'], stepsForOneDataRound))
@@ -376,7 +375,7 @@ def train():
                             ((100*step)/stepsForOneDataRound, evlossValue/(step+1), durationSum/60, (((durationSum*stepsForOneDataRound)/(step+1))/60)-(durationSum/60)))
                     #print('Total Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
                     #        durationSumAll/60, (((durationSumAll*stepsForOneDataRound)/(step+1))/60)-(durationSumAll/60))
-                outputDirFileNum = len([name for name in os.listdir(outputDIR) if os.path.isfile(os.path.join(outputDIR, name))])
+                #outputDirFileNum = len([name for name in os.listdir(outputDIR) if os.path.isfile(os.path.join(outputDIR, name))])
                 #step+=1
             print('Write steps, one round steps', step, stepsForOneDataRound)
             print('Number of files used in training', len(filesDictionaryAccumTrain))

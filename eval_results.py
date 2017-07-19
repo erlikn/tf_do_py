@@ -14,8 +14,8 @@ import Data_IO.kitti_shared as kitti
 # import json_maker, update json files and read requested json file
 import Model_Settings.json_maker as json_maker
 json_maker.recompile_json_files()
-jsonsToRead = ['170711_ITR_B_1.json'#,
-               #'170706_ITR_B_2.json',
+jsonsToRead = ['170711_ITR_B_1.json',
+               '170711_ITR_B_2.json'#,
                #'170706_ITR_B_3.json'
                ]
 

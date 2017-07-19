@@ -31,7 +31,7 @@ PHASE = 'train'
 # import json_maker, update json files and read requested json file
 import Model_Settings.json_maker as json_maker
 json_maker.recompile_json_files()
-jsonToRead = '170711_ITR_B_1.json'
+jsonToRead = '170711_ITR_B_2.json'
 print("Reading %s" % jsonToRead)
 with open('Model_Settings/'+jsonToRead) as data_file:
     modelParams = json.load(data_file)
@@ -276,6 +276,11 @@ def train():
         durationSum = 0
         durationSumAll = 0
         if modelParams['writeWarpedImages']:
+            outputDIR = modelParams['warpedOutputFolder']+'/'
+            print("Using final training state to output processed tfrecords\noutput folder: ", outputDIR)
+            if tf.gfile.Exists(outputDIR):
+                tf.gfile.DeleteRecursively(outputDIR)
+            tf.gfile.MakeDirs(outputDIR)
             lossValueSum = 0
             stepsForOneDataRound = int((modelParams['numExamples']/modelParams['activeBatchSize']))+1
             print('Warping %d images with batch size %d in %d steps' % (modelParams['numExamples'], modelParams['activeBatchSize'], stepsForOneDataRound))
