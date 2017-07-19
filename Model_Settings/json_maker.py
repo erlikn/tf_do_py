@@ -153,7 +153,7 @@ def write_iterative():
     itr_170706_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase)
     itr_170710_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase)
     itr_170711_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase)
-    itr_170712_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase)
+    itr_170719_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase)
     ##############
     ##############
     ##############
@@ -636,14 +636,15 @@ def itr_170711_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
         data['batchNorm'] = True
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
-def itr_170712_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
+def itr_170719_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
     if reCompileITR:
-        data['modelName'] = 'twin_cnn_4p4l2f_inception'
-        data['numParallelModules'] = 3
-        data['imageDepthChannels'] = 3
+        data['modelName'] = 'twin_cnn_4p4l3f_inception_sepOT'
+        data['numParallelModules'] = 2
+        data['imageDepthChannels'] = 2
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
+        data['modelShape'] = [2*32, 2*32, 2*32, 2*32, 128, 128, 128, 128, 1024, 1024] 
         ### ITERATION 1
-        runName = '170712_ITR_B_1'
+        runName = '170719_ITR_B_1'
         data['trainDataDir'] = '../Data/kitti/train_tfrecords'
         data['testDataDir'] = '../Data/kitti/test_tfrecords'
         data['trainLogDir'] = trainLogDirBase + runName
@@ -657,12 +658,11 @@ def itr_170712_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
         data['warpOriginalImage'] = True
-        data['modelShape'] = [3*8, 3*16, 3*8, 3*16, 64, 128, 64, 128, 1024] 
         data['batchNorm'] = True
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
         ### ITERATION 2
-        runName = '170712_ITR_B_2'
+        runName = '170719_ITR_B_2'
         data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
@@ -675,12 +675,11 @@ def itr_170712_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
         data['tMatTestDir'] = data['testLogDir']+'/target'
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
-        data['modelShape'] = [3*8, 3*16, 3*8, 3*16, 64, 128, 64, 128, 1024] 
         data['batchNorm'] = True
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
         ### ITERATION 3
-        runName = '170712_ITR_B_3'
+        runName = '170719_ITR_B_3'
         data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
@@ -693,12 +692,11 @@ def itr_170712_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
         data['tMatTestDir'] = data['testLogDir']+'/target'
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
-        data['modelShape'] = [3*8, 3*16, 3*8, 3*16, 64, 128, 64, 128, 1024] 
         data['batchNorm'] = True
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)
         ### ITERATION 4
-        runName = '170712_ITR_B_4'
+        runName = '170719_ITR_B_4'
         data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
         data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
         data['trainLogDir'] = trainLogDirBase + runName
@@ -711,7 +709,6 @@ def itr_170712_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
         data['tMatTestDir'] = data['testLogDir']+'/target'
         _set_folders(data['tMatTrainDir'])
         _set_folders(data['tMatTestDir'])
-        data['modelShape'] = [3*8, 3*16, 3*8, 3*16, 64, 128, 64, 128, 1024] 
         data['batchNorm'] = True
         data['weightNorm'] = False
         write_json_file(runName+'.json', data)

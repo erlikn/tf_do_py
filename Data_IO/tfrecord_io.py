@@ -102,6 +102,9 @@ def parse_example_proto(exampleSerialized, **kwargs):
     pclA = _get_pcl(features['pclA'], kwargs.get('pclRows'), kwargs.get('pclCols'))
     pclB = _get_pcl(features['pclB'], kwargs.get('pclRows'), kwargs.get('pclCols'))
     target = features['targetABGXYZ']
+    # PCLs will hold padded [0, 0, 0, 0] points at the end that will be ignored during usage
+    # However, they will be kept to unify matrix col size for valid tensor operations 
+    return images, pclA, pclB, target, fileID
 
 def parse_example_proto_DIFF(exampleSerialized, **kwargs):
     """
