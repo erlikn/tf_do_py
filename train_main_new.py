@@ -31,7 +31,7 @@ PHASE = 'train'
 # import json_maker, update json files and read requested json file
 import Model_Settings.json_maker as json_maker
 json_maker.recompile_json_files()
-jsonToRead = '170711_ITR_B_2.json'
+jsonToRead = '170719_ITR_B_3.json'
 print("Reading %s" % jsonToRead)
 with open('Model_Settings/'+jsonToRead) as data_file:
     modelParams = json.load(data_file)
@@ -40,8 +40,8 @@ import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
-from tensorflow.python.client import device_lib
-print(device_lib.list_local_devices())
+#from tensorflow.python.client import device_lib
+#print(device_lib.list_local_devices())
 
 # import input & output modules 
 import Data_IO.data_input_diff as data_input
@@ -267,6 +267,7 @@ def train():
         opCheck = tf.add_check_numerics_ops()
         # Start running operations on the Graph.
         config = tf.ConfigProto(log_device_placement=modelParams['logDevicePlacement'])
+        config.gpu_options.allow_growth = True
         config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
         sess = tf.Session(config=config)
         print('Session      ready')

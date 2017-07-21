@@ -31,7 +31,7 @@ PHASE = 'train'
 # import json_maker, update json files and read requested json file
 import Model_Settings.json_maker as json_maker
 json_maker.recompile_json_files()
-jsonToRead = '170711_ITR_B_2.json'
+jsonToRead = '170720_ITR_B_2.json'
 print("Reading %s" % jsonToRead)
 with open('Model_Settings/'+jsonToRead) as data_file:
     modelParams = json.load(data_file)
@@ -44,8 +44,8 @@ from tensorflow.python.client import device_lib
 print(device_lib.list_local_devices())
 
 # import input & output modules 
-import Data_IO.data_input_diff as data_input
-import Data_IO.data_output_new as data_output
+import Data_IO.data_input as data_input
+import Data_IO.data_output as data_output
 
 # import corresponding model name as model_cnn, specifed at json file
 model_cnn = importlib.import_module('Model_Factory.'+modelParams['modelName'])
@@ -326,9 +326,9 @@ def main(argv=None):  # pylint: disable=unused-argumDt
     #print('Test  Logs Output: %s' % modelParams['testLogDir'])
     print('Train Warp Output: %s' % modelParams['warpedTrainDataDir'])
     #print('Test  Warp Output: %s' % modelParams['warpedTestDataDir'])
-    if input("(Overwrite WARNING) Did you change logs directory? ") != "yes":
-        print("Please consider changing logs directory in order to avoid overwrite!")
-        return
+    #if input("(Overwrite WARNING) Did you change logs directory? ") != "yes":
+    #    print("Please consider changing logs directory in order to avoid overwrite!")
+    #    return
     train()
 
 

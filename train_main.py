@@ -31,20 +31,20 @@ PHASE = 'train'
 # import json_maker, update json files and read requested json file
 import Model_Settings.json_maker as json_maker
 json_maker.recompile_json_files()
-jsonToRead = '170712_ITR_B_1.json'
+jsonToRead = '170720_ITR_B_2.json'
 print("Reading %s" % jsonToRead)
 with open('Model_Settings/'+jsonToRead) as data_file:
     modelParams = json.load(data_file)
 
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
-from tensorflow.python.client import device_lib
-print(device_lib.list_local_devices())
+#from tensorflow.python.client import device_lib
+#print(device_lib.list_local_devices())
 
 # import input & output modules 
-import Data_IO.data_input_diff as data_input
+import Data_IO.data_input as data_input
 import Data_IO.data_output as data_output
 
 # import corresponding model name as model_cnn, specifed at json file
@@ -133,7 +133,8 @@ def weighted_params_loss(targetP, targetT, **kwargs):
     #targetP = tf_mod(targetP, mask)
     #targetT = tf_mod(targetT, mask)
     # Importance weigting on angles as they have smaller values
-    mask = np.array([[1000, 1000, 1000, 100, 100, 100]], dtype=np.float32)
+    mask = np.array([[100, 100, 100, 1, 1, 1]], dtype=np.float32)
+#    mask = np.array([[1000, 1000, 1000, 100, 100, 100]], dtype=np.float32)
     mask = np.repeat(mask, kwargs.get('activeBatchSize'), axis=0)
     targetP = tf.multiply(targetP, mask)
     targetT = tf.multiply(targetT, mask)
@@ -267,6 +268,7 @@ def train():
         opCheck = tf.add_check_numerics_ops()
         # Start running operations on the Graph.
         config = tf.ConfigProto(log_device_placement=modelParams['logDevicePlacement'])
+        config.gpu_options.allow_growth = True
         config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
         sess = tf.Session(config=config)
         print('Session      ready')
@@ -326,35 +328,35 @@ def train():
                     )
                 
         ######### USE LATEST STATE TO WARP IMAGES
-        outputDIR = modelParams['warpedOutputFolder']+'/'
-        outputDirFileNum = len([name for name in os.listdir(outputDIR) if os.path.isfile(os.path.join(outputDIR, name))])
-
-
-        durationSum = 0
-        durationSumAll = 0
-        if modelParams['writeWarpedImages']:
-            lossValueSum = 0
-            stepsForOneDataRound = int((modelParams['numExamples']/modelParams['activeBatchSize']))
-            print('Warping %d images with batch size %d in %d steps' % (modelParams['numExamples'], modelParams['activeBatchSize'], stepsForOneDataRound))
-            #for step in xrange(stepsForOneDataRound):
-            step = 0
-            while outputDirFileNum != 20400:
-                startTime = time.time()
-                evImages, evPclA, evPclB, evtargetT, evtargetP, evtfrecFileIDs, evlossValue = sess.run([images, pclA, pclB, targetT, targetP, tfrecFileIDs, loss])
-                #### put imageA, warpped imageB by pHAB, HAB-pHAB as new HAB, changed fileaddress tfrecFileIDs
-                data_output.output(evImages, evPclA, evPclB, evtargetT, evtargetP, evtfrecFileIDs, **modelParams)
-                duration = time.time() - startTime
-                durationSum += duration
-                durationSumAll += duration
-                # Print Progress Info
-                if ((step % FLAGS.ProgressStepReportOutputWrite) == 0) or ((step+1) == stepsForOneDataRound):
-                    print('Progress: %.2f%%, Loss: %.2f, Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
-                            ((100*step)/stepsForOneDataRound, evlossValue/(step+1), durationSum/60, (((durationSum*stepsForOneDataRound)/(step+1))/60)-(durationSum/60)))
-                    #print('Total Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
-                    #        durationSumAll/60, (((durationSumAll*stepsForOneDataRound)/(step+1))/60)-(durationSumAll/60))
-                outputDirFileNum = len([name for name in os.listdir(outputDIR) if os.path.isfile(os.path.join(outputDIR, name))])
-                step+=1
-            print('Average training loss = %.2f - Average time per sample= %.2f s, Steps = %d' % (evlossValue/modelParams['activeBatchSize'], durationSum/(step*modelParams['activeBatchSize']), step))
+        ### outputDIR = modelParams['warpedOutputFolder']+'/'
+        ### outputDirFileNum = len([name for name in os.listdir(outputDIR) if os.path.isfile(os.path.join(outputDIR, name))])
+### 
+### 
+        ### durationSum = 0
+        ### durationSumAll = 0
+        ### if modelParams['writeWarpedImages']:
+        ###     lossValueSum = 0
+        ###     stepsForOneDataRound = int((modelParams['numExamples']/modelParams['activeBatchSize']))
+        ###     print('Warping %d images with batch size %d in %d steps' % (modelParams['numExamples'], modelParams['activeBatchSize'], stepsForOneDataRound))
+        ###     #for step in xrange(stepsForOneDataRound):
+        ###     step = 0
+        ###     while outputDirFileNum != 20400:
+        ###         startTime = time.time()
+        ###         evImages, evPclA, evPclB, evtargetT, evtargetP, evtfrecFileIDs, evlossValue = sess.run([images, pclA, pclB, targetT, targetP, tfrecFileIDs, loss])
+        ###         #### put imageA, warpped imageB by pHAB, HAB-pHAB as new HAB, changed fileaddress tfrecFileIDs
+        ###         data_output.output(evImages, evPclA, evPclB, evtargetT, evtargetP, evtfrecFileIDs, **modelParams)
+        ###         duration = time.time() - startTime
+        ###         durationSum += duration
+        ###         durationSumAll += duration
+        ###         # Print Progress Info
+        ###         if ((step % FLAGS.ProgressStepReportOutputWrite) == 0) or ((step+1) == stepsForOneDataRound):
+        ###             print('Progress: %.2f%%, Loss: %.2f, Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
+        ###                     ((100*step)/stepsForOneDataRound, evlossValue/(step+1), durationSum/60, (((durationSum*stepsForOneDataRound)/(step+1))/60)-(durationSum/60)))
+        ###             #print('Total Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
+        ###             #        durationSumAll/60, (((durationSumAll*stepsForOneDataRound)/(step+1))/60)-(durationSumAll/60))
+        ###         outputDirFileNum = len([name for name in os.listdir(outputDIR) if os.path.isfile(os.path.join(outputDIR, name))])
+        ###         step+=1
+        ###     print('Average training loss = %.2f - Average time per sample= %.2f s, Steps = %d' % (evlossValue/modelParams['activeBatchSize'], durationSum/(step*modelParams['activeBatchSize']), step))
 
 
 def _setupLogging(logPath):
@@ -389,9 +391,9 @@ def main(argv=None):  # pylint: disable=unused-argumDt
     #print('Test  Warp Output: %s' % modelParams['warpedTestDataDir'])
     print('')
     print('')
-    if input("(Overwrite WARNING) Did you change logs directory? ") != "yes":
-        print("Please consider changing logs directory in order to avoid overwrite!")
-        return
+    #if input("(Overwrite WARNING) Did you change logs directory? ") != "yes":
+    #    print("Please consider changing logs directory in order to avoid overwrite!")
+    #    return
     if tf.gfile.Exists(modelParams['trainLogDir']):
         tf.gfile.DeleteRecursively(modelParams['trainLogDir'])
     tf.gfile.MakeDirs(modelParams['trainLogDir'])
