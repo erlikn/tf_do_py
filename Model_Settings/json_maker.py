@@ -639,7 +639,8 @@ def itr_170711_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
         write_json_file(runName+'.json', data)
 def itr_170719_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase):
     if reCompileITR:
-        data['modelName'] = 'twin_cnn_4p4l3f_inception_sepOT'
+        #data['modelName'] = 'twin_cnn_4p4l3f_inception_sepOT'
+        data['modelName'] = 'twin_cnn_4p4l3f_inception' # compare loss with 0720
         data['numParallelModules'] = 2
         data['imageDepthChannels'] = 2
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer

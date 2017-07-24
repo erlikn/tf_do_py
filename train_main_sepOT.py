@@ -38,7 +38,7 @@ with open('Model_Settings/'+jsonToRead) as data_file:
 
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 #from tensorflow.python.client import device_lib
 #print(device_lib.list_local_devices())
@@ -133,7 +133,7 @@ def weighted_params_loss(targetP, targetT, **kwargs):
     #targetP = tf_mod(targetP, mask)
     #targetT = tf_mod(targetT, mask)
     # Importance weigting on angles as they have smaller values
-    mask = np.array([[100, 100, 100, 1, 1, 1]], dtype=np.float32)
+    mask = np.array([[10, 10, 10, 1, 1, 1]], dtype=np.float32)
     mask = np.repeat(mask, kwargs.get('activeBatchSize'), axis=0)
     targetP = tf.multiply(targetP, mask)
     targetT = tf.multiply(targetT, mask)

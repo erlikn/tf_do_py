@@ -1,2 +1,5 @@
 *.json
 *.pyc
+*.save
+*.swp
+
