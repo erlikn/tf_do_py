@@ -195,3 +195,93 @@ def tfrecord_writer(fileID,
     writer.close()
 
 
+
+
+
+
+########################## N-TUPLE
+def _get_pcl_ntuple(pcl, rows, cols, ntuple):
+    """
+    Decode and put point cloud in the right form. nx4
+    """
+    #pcl = tf.decode_raw(pcl, tf.float32)
+    pcl = tf.reshape(pcl, [rows, cols, ntuple])
+    pcl.set_shape([rows, cols, ntuple])
+    return pcl
+
+def parse_example_proto(exampleSerialized, **kwargs):
+    """
+    Converts a dataset to tfrecords
+    fileID = seqID, i, i+1
+    imgDepth => int8 a.k.a. char (numTuple x 128 x 512)
+    tMatTarget => will be converted to float32 with size numTuple x 6
+    pcl => will be converted to float16 with size (numTuple x 3 x PCLCOLS)
+    """
+    """
+    KWARGS:
+        imageDepthRows = 128
+        imageDepthCols = 512
+        imageDepthChannels = ntuple
+
+        pclRows = 3
+        pclCols = 62074
+
+        targetABGXYZ = ntupleX6
+    """
+    numTuples = kwargs.get('numParallelModules')
+    featureMap = {
+        'fileID': tf.FixedLenFeature([3], dtype=tf.int64),
+        'images': tf.FixedLenFeature([], dtype=tf.string),
+        'pcl': tf.FixedLenFeature([kwargs.get('pclRows')*kwargs.get('pclCols')*numTuples], dtype=tf.float32),
+        'targetn6': tf.FixedLenFeature([(numTuples-1) * 6], dtype=tf.float32)
+        }
+    features = tf.parse_single_example(exampleSerialized, featureMap)
+    fileID = features['fileID']
+    images = _decode_byte_image(features['images'],
+                                kwargs.get('imageDepthRows'),
+                                kwargs.get('imageDepthCols'),
+                                kwargs.get('imageDepthChannels'))
+    pcl = _get_pcl(features['pcl'], kwargs.get('pclRows'), kwargs.get('pclCols'), numTuples)
+    target = features['targetn6']
+    # PCLs will hold padded [0, 0, 0, 0] points at the end that will be ignored during usage
+    # However, they will be kept to unify matrix col size for valid tensor operations 
+    return images, pcl, target, fileID
+
+def tfrecord_writer_ntuple(ID, pcl, imgDepth, tMatTarget, tfRecFolder, numTuples, filename):
+    """
+    Converts a dataset to tfrecords
+    fileID = seqID, i, i+1
+    imgDepth => int8 a.k.a. char (numTuple x 128 x 512)
+    tMatTarget => will be converted to float32 with size numTuple x 6
+    pcl => will be converted to float16 with size (numTuple x 3 x PCLCOLS)
+    """
+    tfRecordPath = tfRecFolder + tfFileName + ".tfrecords"
+    # Depth Images
+    rows = imgDepthA.shape[0]
+    cols = imgDepthA.shape[1]
+    flatImdef _get_pcl(pcl, rows, cols):
+    """
+    Decode and put point cloud in the right form. nx4
+    """
+    #pcl = tf.decode_raw(pcl, tf.float32)
+    pcl = tf.reshape(pcl, [rows, cols])
+    pcl.set_shape([rows, cols])
+    return pclage = imgDepth.reshape(rows*cols*numTuples)
+    flatImage = np.asarray(flatImage, np.float32)
+    flatImageList = flatImage.tostring()
+    # Point Clouds
+    pcl = pcl.reshape(pcl.shape[0]*pcl.shape[1]*numTuples) # 3 x PCL_COLS
+    pclList = pcl.tolist()
+    # Target Transformation
+    tMatTarget = tMatTarget.reshape(tMatTarget.shape[0]*(numTuples-1))
+    tMatTargetList = tMatTarget.tolist()
+
+    writer = tf.python_io.TFRecordWriter(tfRecordPath)
+    example = tf.train.Example(features=tf.train.Features(feature={
+        'fileID': _int64_array(fileID),
+        'images': _bytes_feature(flatImageList),
+        'pcl': _float_nparray(pcllist), # 2D np array
+        'targetn6': _float_nparray(tMatTargetList) # 2D np array
+        }))
+    writer.write(example.SerializeToString())
+    writer.close()
