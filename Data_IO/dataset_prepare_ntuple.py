@@ -260,9 +260,22 @@ def _get_tMat_A_2_B(tMatA2o, tMatB2o):
     # inv(tMatB2o) * tMatA2o : A -> B
     tMatA2o = np.append(tMatA2o, [[0, 0, 0, 1]], axis=0)
     tMatB2o = np.append(tMatB2o, [[0, 0, 0, 1]], axis=0)
-    tMatA2B = np.matmul(np.linalg.inv(t1MatB2o), tMatA2o)
+    tMatA2B = np.matmul(np.linalg.inv(tMatB2o), tMatA2o)
     tMatA2B = np.delete(tMatA2B, tMatA2B.shape[0]-1, 0)
     return tMatA2B
+def _get_tMat_B_2_A(tMatA2o, tMatB2o):
+    '''
+    tMatA2o A -> O (pcl is in A), tMatB2o B -> O (pcl will be in B)
+    return tMat B -> A
+    '''
+    # tMatA2o: A -> Orig ==> inv(tMatA2o): Orig -> A
+    # tMatB2o: B -> Orig 
+    # inv(tMatA2o) * tMatB2o : B -> A
+    tMatA2o = np.append(tMatA2o, [[0, 0, 0, 1]], axis=0)
+    tMatB2o = np.append(tMatB2o, [[0, 0, 0, 1]], axis=0)
+    tMatB2A = np.matmul(np.linalg.inv(tMatA2o), tMatB2o)
+    tMatB2A = np.delete(tMatB2A, tMatB2A.shape[0]-1, 0)
+    return tMatB2A
 
 def _get_tMat_B_2_O(tMatA2o, tMatA2B):
     '''
@@ -315,7 +328,7 @@ def _get_pcl_XYZ(filePath):
 
 
 
-def process_dataset(startTime, durationSum, pclFolderList, seqID, pclFilenamesList, poseFileList, tfRecFolder,  numTuples, i):
+def process_dataset(startTime, durationSum, pclFolderList, seqIDs, pclFilenamesList, poseFileList, tfRecFolder,  numTuples, i):
     '''
     pclFilenames: list of pcl file addresses
     poseFile: includes a list of pose files to read
@@ -329,13 +342,16 @@ def process_dataset(startTime, durationSum, pclFolderList, seqID, pclFilenamesLi
     and extraxt dX, dY, dZ
     use them to train the network
     '''
+    seqID = seqIDs[i]
+    print("SeqID started : ", seqID)
+
     pclFolder = pclFolderList[i]
     pclFilenames = pclFilenamesList[i]
     poseFile = poseFileList[i]
 
     xyziList = list()
     imgDepthList = list()
-    poseA2BList = list()
+    poseB2AList = list()
     poseX20List = list()
     # pop the first in Tuples and append last as numTuple
     for j in range(numTuples-1, len(pclFilenames)-1):
@@ -347,20 +363,20 @@ def process_dataset(startTime, durationSum, pclFolderList, seqID, pclFilenamesLi
             imgDepthList.append(imgDepth)
             poseX20List.append(_get_3x4_tmat(poseFile[0]))
             # read rest numTuples once
-            for (i in range(1, numTuples)):
+            for i in range(1, numTuples):
                 xyzi = _get_pcl_XYZ(pclFolder + pclFilenames[i])
                 imgDepth, xyzi = get_depth_image_pano_pclView(xyzi)
                 xyziList.append(xyzi)
                 imgDepthList.append(imgDepth)
                 poseX20List.append(_get_3x4_tmat(poseFile[i]))
-                # get target pose  A->B also changes to abgxyz : get abgxyzb-abgxyza
-                pose_AB = _get_tMat_A_2_B(poseX20List[i-1], poseX20List[i])
-                abgxyzA2B = kitti._get_params_from_tmat(pose_AB)
-                poseA2BList.append(abgxyzA2B)
+                # get target pose  B->A also changes to abgxyz : get abgxyzb-abgxyza
+                pose_B2A = _get_tMat_B_2_A(poseX20List[i-1], poseX20List[i])
+                abgxyzB2A = kitti._get_params_from_tmat(pose_B2A)
+                poseB2AList.append(abgxyzB2A)
         else:
             xyziList.pop(0)
             imgDepthList.pop(0)
-            poseA2BList.pop(0)
+            poseB2AList.pop(0)
             poseX20List.pop(0)
             # get i
             xyzi = _get_pcl_XYZ(pclFolder + pclFilenames[j])
@@ -368,19 +384,20 @@ def process_dataset(startTime, durationSum, pclFolderList, seqID, pclFilenamesLi
             xyziList.append(xyzi)
             imgDepthList.append(imgDepth)
             poseX20List.append(_get_3x4_tmat(poseFile[j]))
-            # get target pose  A->B also changes to abgxyz : get abgxyzb-abgxyza
-            pose_AB = _get_tMat_A_2_B(poseX20List[numTuples-1], poseX20List[numTuples-1])
-            abgxyzA2B = kitti._get_params_from_tmat(pose_AB)
-            poseA2BList.append(abgxyzA2B)
+            # get target pose  B->A also changes to abgxyz : get abgxyzb-abgxyza
+            pose_B2A = _get_tMat_B_2_A(poseX20List[numTuples-2], poseX20List[numTuples-1])
+            abgxyzB2A = kitti._get_params_from_tmat(pose_B2A)
+            poseB2AList.append(abgxyzB2A)
 
         #
-        fileID = [int(seqID)*100, (j-(numTuples-1))*100000, j*100000]
-        odometery_writer(fileI1D,# 3 ints
+        fileID = [int(seqID)+100, (j-(numTuples-1))+100000, j+100000]
+        odometery_writer(fileID,# 3 ints
                          xyziList,# ntuplex3xPCL_COLS
-                         imgDepthList# ntuplex128x512
-                         poseA2BList,# (ntuple-1)x6
+                         imgDepthList,# ntuplex128x512
+                         poseB2AList,# (ntuple-1)x6
                          tfRecFolder,
                          numTuples)
+    print("SeqID completed : ", seqID)
     return
 ################################
 def _get_pose_data(posePath):
@@ -400,6 +417,7 @@ def prepare_dataset(datasetType, pclFolder, poseFolder, seqIDs, tfRecFolder, num
     pclFolderPathList = list()
     pclFilenamesList = list()
     poseFileList = list()
+    print("Arranging filenames")
     for i in range(len(seqIDs)):
         posePath = _get_pose_path(poseFolder, seqIDs[i])
         poseFile = _get_pose_data(posePath)
@@ -411,12 +429,13 @@ def prepare_dataset(datasetType, pclFolder, poseFolder, seqIDs, tfRecFolder, num
         poseFileList.append(poseFile)
         pclFolderPathList.append(pclFolderPath)
         pclFilenamesList.append(pclFilenames)
-        
+    
+    print("Starting datawrite")
     startTime = time.time()
     num_cores = multiprocessing.cpu_count() - 2
     #for j in range(0,len(pclFilenames)-numTuples):
     #    process_dataset(startTime, durationSum, pclFolderPath, seqIDs[i], pclFilenames, poseFile, tfRecFolder, numTuples, j)
-    Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPathList, seqIDs[i], pclFilenamesList, poseFileList, tfRecFolder, numTuples, j) for j in range(0,len(seqIDs)))
+    Parallel(n_jobs=num_cores)(delayed(process_dataset)(startTime, durationSum, pclFolderPathList, seqIDs, pclFilenamesList, poseFileList, tfRecFolder, numTuples, j) for j in range(0,len(seqIDs)))
     #for i in range(0,len(pclFilenames)-numTuples):
     #    print(shapes[i])
 
@@ -588,33 +607,33 @@ def _set_folders(folderPath):
 
 pclPath = '../Data/kitti/pointcloud/'
 posePath = '../Data/kitti/poses/'
-seqIDtrain = ['00']#, '01', '02', '03', '04', '05', '06', '07', '08']#['00', '01', '02', '03', '04', '05', '06', '07', '08']
+seqIDtrain = ['00', '01', '02', '03', '04', '05', '06', '07', '08']#['00', '01', '02', '03', '04', '05', '06', '07', '08']
 seqIDtest = ['09', '10']
 
 traintfRecordFLD = "../Data/kitti/train_tfrecords_5tuple/"
 testtfRecordFLD = "../Data/kitti/test_tfrecords_5tuple/"
 
-def main():
-    #find_max_mins("train", pclPath, posePath, seqIDtrain)
-    #find_max_mins("test", pclPath, posePath, seqIDtest)
-    '''
-    We found that the plane slop is in between [ -0.1645 , 0.43 ] # [top, down]
-    So any point beyond this should be trimmed.
-    And all points while converting to depthmap should be grouped in this range for Y
-    Regarding X, we set all points with z > 0. This means slops for X are inf
+##def main():
+#    #find_max_mins("train", pclPath, posePath, seqIDtrain)
+#    #find_max_mins("test", pclPath, posePath, seqIDtest)
+#    '''
+#    We found that the plane slop is in between [ -0.1645 , 0.43 ] # [top, down]
+#    So any point beyond this should be trimmed.
+#    And all points while converting to depthmap should be grouped in this range for Y
+#    Regarding X, we set all points with z > 0. This means slops for X are inf
+#
+#    We add 2 points to the list holding 2 corners of the image plane
+#    normalize points to chunks and then remove the auxiliary points
+#    '''
+#
+#    '''
+#    To have all point clouds within same dimensions, we should add extra 0 rows to have them all unified
+#    '''
+#    #find_max_PCL("train", pclPath, posePath, seqIDtrain)
+#    #find_max_PCL("test", pclPath, posePath, seqIDtest)
+#
+_set_folders(traintfRecordFLD)
+_set_folders(testtfRecordFLD)
 
-    We add 2 points to the list holding 2 corners of the image plane
-    normalize points to chunks and then remove the auxiliary points
-    '''
-
-    '''
-    To have all point clouds within same dimensions, we should add extra 0 rows to have them all unified
-    '''
-    #find_max_PCL("train", pclPath, posePath, seqIDtrain)
-    #find_max_PCL("test", pclPath, posePath, seqIDtest)
-
-    _set_folders(traintfRecordFLD)
-    _set_folders(testtfRecordFLD)
-
-    prepare_dataset("train", pclPath, posePath, seqIDtrain, traintfRecordFLD, numTuples=5)
-    #prepare_dataset("test", pclPath, posePath, seqIDtest, testtfRecordFLD, numTuples=5)
+prepare_dataset("train", pclPath, posePath, seqIDtrain, traintfRecordFLD, numTuples=5)
+prepare_dataset("test", pclPath, posePath, seqIDtest, testtfRecordFLD, numTuples=5)

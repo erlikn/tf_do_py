@@ -209,7 +209,15 @@ def _get_pcl_ntuple(pcl, rows, cols, ntuple):
     pcl.set_shape([rows, cols, ntuple])
     return pcl
 
-def parse_example_proto(exampleSerialized, **kwargs):
+def _get_target_ntuple(target, rows, ntuple):
+    """
+    Decode and put target in the right form. 6xn
+    """
+    target = tf.reshape(target, [rows, ntuple])
+    target.set_shape([rows, ntuple])
+    return target
+
+def parse_example_proto_ntuple(exampleSerialized, **kwargs):
     """
     Converts a dataset to tfrecords
     fileID = seqID, i, i+1
@@ -241,13 +249,13 @@ def parse_example_proto(exampleSerialized, **kwargs):
                                 kwargs.get('imageDepthRows'),
                                 kwargs.get('imageDepthCols'),
                                 kwargs.get('imageDepthChannels'))
-    pcl = _get_pcl(features['pcl'], kwargs.get('pclRows'), kwargs.get('pclCols'), numTuples)
-    target = features['targetn6']
+    pcl = _get_pcl_ntuple(features['pcl'], kwargs.get('pclRows'), kwargs.get('pclCols'), numTuples)
+    target = _get_target_ntuple(features['targetn6'], kwargs.get('outputSize'), numTuples-1)
     # PCLs will hold padded [0, 0, 0, 0] points at the end that will be ignored during usage
     # However, they will be kept to unify matrix col size for valid tensor operations 
     return images, pcl, target, fileID
 
-def tfrecord_writer_ntuple(ID, pcl, imgDepth, tMatTarget, tfRecFolder, numTuples, filename):
+def tfrecord_writer_ntuple(fileID, pcl, imgDepth, tMatTarget, tfRecFolder, numTuples, tfFileName):
     """
     Converts a dataset to tfrecords
     fileID = seqID, i, i+1
@@ -257,16 +265,9 @@ def tfrecord_writer_ntuple(ID, pcl, imgDepth, tMatTarget, tfRecFolder, numTuples
     """
     tfRecordPath = tfRecFolder + tfFileName + ".tfrecords"
     # Depth Images
-    rows = imgDepthA.shape[0]
-    cols = imgDepthA.shape[1]
-    flatImdef _get_pcl(pcl, rows, cols):
-    """
-    Decode and put point cloud in the right form. nx4
-    """
-    #pcl = tf.decode_raw(pcl, tf.float32)
-    pcl = tf.reshape(pcl, [rows, cols])
-    pcl.set_shape([rows, cols])
-    return pclage = imgDepth.reshape(rows*cols*numTuples)
+    rows = imgDepth.shape[0]
+    cols = imgDepth.shape[1]
+    flatImage = imgDepth.reshape(rows*cols*numTuples)
     flatImage = np.asarray(flatImage, np.float32)
     flatImageList = flatImage.tostring()
     # Point Clouds
@@ -280,7 +281,7 @@ def tfrecord_writer_ntuple(ID, pcl, imgDepth, tMatTarget, tfRecFolder, numTuples
     example = tf.train.Example(features=tf.train.Features(feature={
         'fileID': _int64_array(fileID),
         'images': _bytes_feature(flatImageList),
-        'pcl': _float_nparray(pcllist), # 2D np array
+        'pcl': _float_nparray(pclList), # 2D np array
         'targetn6': _float_nparray(tMatTargetList) # 2D np array
         }))
     writer.write(example.SerializeToString())

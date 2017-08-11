@@ -801,9 +801,11 @@ def itr_170808_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDir
         data['numParallelModules'] = 5
         data['imageDepthChannels'] = 5
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
-        data['modelShape'] = [5*32, 5*32, 5*32, 5*32, 64, 64, 128, 128, 512, 512]
-        data['trainBatchSize'] = 12
-        data['testBatchSize'] = 12
+        data['modelShape'] = [5*16, 32, 5*16, 32, 32, 32, 64, 64, 256, 512]
+        data['trainBatchSize'] = 4
+        data['testBatchSize'] = 4
+        data['numTrainDatasetExamples'] = 20400
+        data['numTestDatasetExamples'] = 2790
         ### ITERATION 1
         runName = '170808_ITR_B_1'
         data['trainDataDir'] = '../Data/kitti/train_tfrecords_5tuple'

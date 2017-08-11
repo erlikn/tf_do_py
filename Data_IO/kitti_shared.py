@@ -101,7 +101,7 @@ def _add_row4_tmat(pose3x4):
     return np.append(pose3x4, [[0, 0, 0, 1]], axis=0)
 def _remove_row4_tmat(pose4x4):
     return np.delete(pose4x4, pose4x4.shape[0]-1, 0)
-def get_residual_tMat_A2B(tMatT, tMatP):
+def get_residual_tMat_A2B(tMatA, tMatB):
     '''
         Input: 3x4, 3x4
         To get residual transformation E:
@@ -110,11 +110,23 @@ def get_residual_tMat_A2B(tMatT, tMatP):
         return E as residual tMat 3x4
     '''
     # get tMat in the correct form
-    tMatT = _add_row4_tmat(_get_3x4_tmat(tMatT))
-    tMatP = _add_row4_tmat(_get_3x4_tmat(tMatP))
-    tMatResA2B = np.matmul(np.linalg.inv(tMatP), tMatT)
+    tMatA = _add_row4_tmat(_get_3x4_tmat(tMatA))
+    tMatB = _add_row4_tmat(_get_3x4_tmat(tMatB))
+    tMatResA2B = np.matmul(np.linalg.inv(tMatB), tMatA)
     tMatResA2B = _remove_row4_tmat(tMatResA2B)
     return tMatResA2B
+
+def get_residual_tMat_Bp2B2A(tMatB2A, tMatB2Bp):
+    '''
+        Input: 3x4, 3x4
+        return E as residual tMat 3x4
+    '''
+    # get tMat in the correct form
+    tMatB2A = _add_row4_tmat(_get_3x4_tmat(tMatB2A))
+    tMatB2Bp = _add_row4_tmat(_get_3x4_tmat(tMatB2Bp))
+    tMatResBp2A = np.matmul(tMatB2A, np.linalg.inv(tMatB2Bp))
+    tMatResBp2A = _remove_row4_tmat(tMatResBp2A)
+    return tMatResBp2A
 ############################################################################
 def transform_pcl(xyz, tMat):
     '''
