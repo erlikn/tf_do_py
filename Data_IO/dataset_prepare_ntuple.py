@@ -354,7 +354,7 @@ def process_dataset(startTime, durationSum, pclFolderList, seqIDs, pclFilenamesL
     poseB2AList = list()
     poseX20List = list()
     # pop the first in Tuples and append last as numTuple
-    for j in range(numTuples-1, len(pclFilenames)-1):
+    for j in range(numTuples-1, len(pclFilenames)):
         if (j == numTuples-1):
             # get 0
             xyzi = _get_pcl_XYZ(pclFolder + pclFilenames[0])
