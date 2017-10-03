@@ -1700,6 +1700,7 @@ def itr_170720_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase, ru
         write_json_file(runName+'.json', data)
 def itr_170808_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, data):
     if reCompileITR:
+        runPrefix = runName+'_'
         data['modelName'] = 'twin_cnn_4p4l3f_inception'
         data['numParallelModules'] = 5
         data['imageDepthChannels'] = 5
@@ -1713,7 +1714,7 @@ def itr_170808_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDir
         data['numTuple'] = 5
         ### ITERATION 1
         if itrNum == 1:
-            runName = '170808_ITR_B_'+str(itrNum)
+            runName = runPrefix+str(itrNum)
             data['trainDataDir'] = '../Data/kitti/train_tfrecords_5tuple'
             data['testDataDir'] = '../Data/kitti/test_tfrecords_5tuple'
             data['trainLogDir'] = trainLogDirBase + runName
@@ -1732,7 +1733,7 @@ def itr_170808_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDir
             write_json_file(runName+'.json', data)
         ### ITERATION 2
         if itrNum == 2:
-            runName = '170808_ITR_B_'+str(itrNum)
+            runName = runPrefix+str(itrNum)
             data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
             data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
             data['trainLogDir'] = trainLogDirBase + runName
@@ -1750,7 +1751,7 @@ def itr_170808_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDir
             write_json_file(runName+'.json', data)
         ### ITERATION 3
         if itrNum == 3:
-            runName = '170808_ITR_B_'+str(itrNum)
+            runName = runPrefix+str(itrNum)
             data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
             data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
             data['trainLogDir'] = trainLogDirBase + runName
@@ -1768,7 +1769,7 @@ def itr_170808_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDir
             write_json_file(runName+'.json', data)
         ### ITERATION 4
         if itrNum == 4:
-            runName = '170808_ITR_B_'+str(itrNum)
+            runName = runPrefix+str(itrNum)
             data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
             data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
             data['trainLogDir'] = trainLogDirBase + runName
@@ -1789,6 +1790,7 @@ def itr_170808_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDir
 
 def itr_171002_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, data):
     if reCompileITR:
+        runPrefix = runName+'_'
         data['modelName'] = 'twin_cnn_4p4l2f_inception'
         data['numParallelModules'] = 5
         data['imageDepthChannels'] = 5
@@ -1803,7 +1805,7 @@ def itr_171002_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDir
         data['numTuple'] = 5
         ### ITERATION 1
         if itrNum == 1:
-            runName = '170808_ITR_B_'+str(itrNum)
+            runName = runPrefix+str(itrNum)
             data['trainDataDir'] = '../Data/kitti/train_tfrecords_5tuple'
             data['testDataDir'] = '../Data/kitti/test_tfrecords_5tuple'
             data['trainLogDir'] = trainLogDirBase + runName
@@ -1822,7 +1824,7 @@ def itr_171002_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDir
             write_json_file(runName+'.json', data)
         ### ITERATION 2
         if itrNum == 2:
-            runName = '170808_ITR_B_'+str(itrNum)
+            runName = runPrefix+str(itrNum)
             data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
             data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
             data['trainLogDir'] = trainLogDirBase + runName
@@ -1840,7 +1842,7 @@ def itr_171002_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDir
             write_json_file(runName+'.json', data)
         ### ITERATION 3
         if itrNum == 3:
-            runName = '170808_ITR_B_'+str(itrNum)
+            runName = runPrefix+str(itrNum)
             data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
             data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
             data['trainLogDir'] = trainLogDirBase + runName
@@ -1858,7 +1860,7 @@ def itr_171002_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDir
             write_json_file(runName+'.json', data)
         ### ITERATION 4
         if itrNum == 4:
-            runName = '170808_ITR_B_'+str(itrNum)
+            runName = runPrefix+str(itrNum)
             data['trainDataDir'] = data['warpedTrainDataDir'] # from previous iteration
             data['testDataDir'] = data['warpedTestDataDir'] # from previous iteration
             data['trainLogDir'] = trainLogDirBase + runName
