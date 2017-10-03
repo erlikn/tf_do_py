@@ -328,6 +328,9 @@ def main(argv=None):  # pylint: disable=unused-argumDt
     print("Reading %s" % jsonToRead)
     with open('Model_Settings/'+jsonToRead) as data_file:
         modelParams = json.load(data_file)
+
+    modelParams = _set_control_params(modelParams)
+    
     print('\n\n\n')
     print(modelParams['modelName'])
     print('Rounds on datase = %.1f' % float((modelParams['trainBatchSize']*modelParams['trainMaxSteps'])/modelParams['numTrainDatasetExamples']))
