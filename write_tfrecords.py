@@ -202,7 +202,7 @@ tf.app.flags.DEFINE_integer('ProgressStepReportStep', 20,
                             """Number of batches to run.""")
 ####################################################
 
-def train():
+def train(modelParams):
     # import corresponding model name as model_cnn, specifed at json file
     model_cnn = importlib.import_module('Model_Factory.'+modelParams['modelName'])
 
