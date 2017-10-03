@@ -209,12 +209,12 @@ def _get_pcl_ntuple(pcl, rows, cols, ntuple):
     pcl.set_shape([rows, cols, ntuple])
     return pcl
 
-def _get_target_ntuple(target, rows, ntuple):
+def _get_target_ntuple(target, size):
     """
     Decode and put target in the right form. 6xn
     """
-    target = tf.reshape(target, [rows, ntuple])
-    target.set_shape([rows, ntuple])
+    target = tf.reshape(target, [size])
+    target.set_shape([size])
     return target
 
 def parse_example_proto_ntuple(exampleSerialized, **kwargs):
@@ -250,7 +250,7 @@ def parse_example_proto_ntuple(exampleSerialized, **kwargs):
                                 kwargs.get('imageDepthCols'),
                                 kwargs.get('imageDepthChannels'))
     pcl = _get_pcl_ntuple(features['pcl'], kwargs.get('pclRows'), kwargs.get('pclCols'), numTuples)
-    target = _get_target_ntuple(features['targetn6'], kwargs.get('outputSize'), numTuples-1)
+    target = _get_target_ntuple(features['targetn6'], kwargs.get('outputSize') * (numTuples-1))
     # PCLs will hold padded [0, 0, 0, 0] points at the end that will be ignored during usage
     # However, they will be kept to unify matrix col size for valid tensor operations 
     return images, pcl, target, fileID

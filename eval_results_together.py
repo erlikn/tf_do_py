@@ -22,8 +22,13 @@ json_maker.recompile_json_files()
 #               ]
 
 # BAD zigzagy as the orientation and translation are seperate
-jsonsToRead = ['170720_ITR_B_1.json',
-               '170720_ITR_B_2.json'
+#jsonsToRead = ['170720_ITR_B_1.json',
+#               '170720_ITR_B_2.json'
+#               ]
+
+# BAD zigzagy as the orientation and translation are seperate
+jsonsToRead = ['170808_ITR_B_1.json',
+               '170808_ITR_B_2.json'
                ]
 
 #jsonsToRead = ['170719_ITR_B_1.json',
