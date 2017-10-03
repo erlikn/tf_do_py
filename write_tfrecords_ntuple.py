@@ -27,28 +27,42 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 #import tensorflow.python.debug as tf_debug
 
-PHASE = 'train'
-# import json_maker, update json files and read requested json file
-import Model_Settings.json_maker as json_maker
-json_maker.recompile_json_files()
-jsonToRead = '170808_ITR_B_1.json'
-print("Reading %s" % jsonToRead)
-with open('Model_Settings/'+jsonToRead) as data_file:
-    modelParams = json.load(data_file)
-
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
-from tensorflow.python.client import device_lib
-print(device_lib.list_local_devices())
+#from tensorflow.python.client import device_lib
+#print(device_lib.list_local_devices())
 
-# import input & output modules 
 import Data_IO.data_input_ntuple as data_input
 import Data_IO.data_output_ntuple as data_output
 
-# import corresponding model name as model_cnn, specifed at json file
-model_cnn = importlib.import_module('Model_Factory.'+modelParams['modelName'])
+PHASE = 'train'
+
+####################################################
+####################################################
+def _set_control_params(modelParams):
+    modelParams['phase'] = PHASE
+    #params['shardMeta'] = model_cnn.getShardsMetaInfo(FLAGS.dataDir, params['phase'])
+
+    modelParams['existingParams'] = None
+
+    if modelParams['phase'] == 'train':
+        modelParams['activeBatchSize'] = modelParams['trainBatchSize']
+        modelParams['maxSteps'] = modelParams['trainMaxSteps']
+        modelParams['numExamples'] = modelParams['numTrainDatasetExamples']
+        modelParams['dataDir'] = modelParams['trainDataDir']
+        modelParams['warpedOutputFolder'] = modelParams['warpedTrainDataDir']
+
+    if modelParams['phase'] == 'test':
+        modelParams['activeBatchSize'] = modelParams['testBatchSize']
+        modelParams['maxSteps'] = modelParams['testMaxSteps']
+        modelParams['numExamples'] = modelParams['numTestDatasetExamples']
+        modelParams['dataDir'] = modelParams['testDataDir']
+        modelParams['warpedOutputFolder'] = modelParams['warpedTestDataDir']
+    return modelParams
+####################################################
+####################################################
 ####################################################
 ####################################################
 ################### introducing new op for mod
@@ -188,28 +202,10 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_integer('ProgressStepReportStep', 20,
                             """Number of batches to run.""")
 ####################################################
-def _get_control_params():
-    modelParams['phase'] = PHASE
-    #params['shardMeta'] = model_cnn.getShardsMetaInfo(FLAGS.dataDir, params['phase'])
-
-    modelParams['existingParams'] = None
-
-    if modelParams['phase'] == 'train':
-        modelParams['activeBatchSize'] = modelParams['trainBatchSize']
-        modelParams['maxSteps'] = modelParams['trainMaxSteps']
-        modelParams['numExamples'] = modelParams['numTrainDatasetExamples']
-        modelParams['dataDir'] = modelParams['trainDataDir']
-        modelParams['warpedOutputFolder'] = modelParams['warpedTrainDataDir']
-
-    if modelParams['phase'] == 'test':
-        modelParams['activeBatchSize'] = modelParams['testBatchSize']
-        modelParams['maxSteps'] = modelParams['testMaxSteps']
-        modelParams['numExamples'] = modelParams['numTestDatasetExamples']
-        modelParams['dataDir'] = modelParams['testDataDir']
-        modelParams['warpedOutputFolder'] = modelParams['warpedTestDataDir']
 
 def train():
-    _get_control_params()
+    # import corresponding model name as model_cnn, specifed at json file
+    model_cnn = importlib.import_module('Model_Factory.'+modelParams['modelName'])
 
     if not os.path.exists(modelParams['dataDir']):
         raise ValueError("No such data directory %s" % modelParams['dataDir'])    
@@ -317,6 +313,24 @@ def train():
 
 
 def main(argv=None):  # pylint: disable=unused-argumDt
+    if (len(argv)<3):
+        print("Enter 'model name' and 'iteration number'")
+        return
+    modelName = argv[1]
+    itrNum = int(argv[2])
+    if itrNum>4 or itrNum<0:
+        print('iteration number should only be from 1 to 4 inclusive')
+        return
+    # import json_maker, update json files and read requested json file
+    import Model_Settings.json_maker as json_maker
+    if not json_maker.recompile_json_files(modelName, itrNum):
+        return
+    jsonToRead = modelName+'_'+str(itrNum)+'.json'
+    print("Reading %s" % jsonToRead)
+    with open('Model_Settings/'+jsonToRead) as data_file:
+        modelParams = json.load(data_file)
+
+    modelParams = _set_control_params(modelParams)
     print('\n\n\n')
     print(modelParams['modelName'])
     print('Rounds on datase = %.1f' % float((modelParams['trainBatchSize']*modelParams['trainMaxSteps'])/modelParams['numTrainDatasetExamples']))
@@ -329,7 +343,7 @@ def main(argv=None):  # pylint: disable=unused-argumDt
     #if input("(Overwrite WARNING) Did you change logs directory? ") != "yes":
     #    print("Please consider changing logs directory in order to avoid overwrite!")
     #    return
-    train()
+    train(modelParams)
 
 
 if __name__ == '__main__':

@@ -11,17 +11,15 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 
 import Data_IO.kitti_shared as kitti
 
-# import json_maker, update json files and read requested json file
-import Model_Settings.json_maker as json_maker
-json_maker.recompile_json_files()
+
 
 # 170706_ITR_B_1.json Best performer
-jsonsToRead = ['170706_ITR_B_1.json',
-               '170706_ITR_B_2.json',
-               '170706_ITR_B_3.json'
-               ]
-INITINDEX = 0
-NUMTUPLES = 2
+#jsonsToRead = ['170706_ITR_B_1.json',
+#               '170706_ITR_B_2.json',
+#               '170706_ITR_B_3.json'
+#               ]
+#INITINDEX = 0
+#NUMTUPLES = 2
 
 
 # BAD zigzagy as the orientation and translation are seperate
@@ -31,11 +29,12 @@ NUMTUPLES = 2
 #INITINDEX = 0
 #NUMTUPLES = 2
 
-#jsonsToRead = ['170719_ITR_B_1.json',
-#               '170719_ITR_B_2.json'
-#               ]
-#INITINDEX = 0
-#NUMTUPLES = 2
+jsonName = '170719_ITR_B'
+jsonItrs = [1,
+            2
+            ]
+INITINDEX = 0
+NUMTUPLES = 2
 
 
 #jsonsToRead = ['170808_ITR_B_1.json',
@@ -43,6 +42,13 @@ NUMTUPLES = 2
 #               ]
 #INITINDEX = 100
 #NUMTUPLES = 5
+
+# import json_maker, update json files and read requested json file
+import Model_Settings.json_maker as json_maker
+jsonsToRead = list()
+for i in range(len(jsonItrs)):
+    json_maker.recompile_json_files(jsonName,jsonItrs[i])
+    jsonsToRead.append(jsonName+'_'+str(jsonItrs[i])+'.json')
 
 def read_model_params(jsonToRead):
     print("Reading %s" % jsonToRead)
