@@ -607,3 +607,4 @@ def main():
 
     prepare_dataset("train", pclPath, posePath, seqIDtrain, traintfRecordFLD)
     #prepare_dataset("test", pclPath, posePath, seqIDtest, testtfRecordFLD)
+main()
