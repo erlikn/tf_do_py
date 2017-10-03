@@ -293,22 +293,7 @@ def train():
                 duration = time.time() - startTime
                 durationSum += duration
                 durationSumAll += duration
-                # Print Progress Iif (len(argv)<3):
-        print("Enter 'model name' and 'iteration number'")
-        return
-    modelName = argv[1]
-    itrNum = int(argv[2])
-    if itrNum>4 or itrNum<0:
-        print('iteration number should only be from 1 to 4 inclusive')
-        return
-    # import json_maker, update json files and read requested json file
-    import Model_Settings.json_maker as json_maker
-    if not json_maker.recompile_json_files(modelName, itrNum):
-        return
-    jsonToRead = modelName+'_'+str(itrNum)+'.json'
-    print("Reading %s" % jsonToRead)
-    with open('Model_Settings/'+jsonToRead) as data_file:
-        modelParams = json.load(data_file)nfo
+                # Print Progress Info
                 if ((step % FLAGS.ProgressStepReportStep) == 0) or ((step+1) == stepsForOneDataRound):
                     print('Number of files used in training', len(filesDictionaryAccum))
                     print('Progress: %.2f%%, Loss: %.2f, Elapsed: %.2f mins, Training Completion in: %.2f mins --- %s' % 
