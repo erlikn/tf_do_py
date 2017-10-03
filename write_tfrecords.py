@@ -280,22 +280,7 @@ def train():
             stepsForOneDataRound = int((modelParams['numExamples']/modelParams['activeBatchSize']))+1
             print('Warping %d images with batch size %d in %d steps' % (modelParams['numExamples'], modelParams['activeBatchSize'], stepsForOneDataRound))
             for step in xrange(stepsForOneDataRound):
-                startTime = time.tiif (len(argv)<3):
-        print("Enter 'model name' and 'iteration number'")
-        return
-    modelName = argv[1]
-    itrNum = int(argv[2])
-    if itrNum>4 or itrNum<0:
-        print('iteration number should only be from 1 to 4 inclusive')
-        return
-    # import json_maker, update json files and read requested json file
-    import Model_Settings.json_maker as json_maker
-    if not json_maker.recompile_json_files(modelName, itrNum):
-        return
-    jsonToRead = modelName+'_'+str(itrNum)+'.json'
-    print("Reading %s" % jsonToRead)
-    with open('Model_Settings/'+jsonToRead) as data_file:
-        modelParams = json.load(data_file)me()
+                startTime = time.time()
                 evImages, evPclA, evPclB, evtargetT, evtargetP, evtfrecFileIDs, evlossValue = sess.run([images, pclA, pclB, targetT, targetP, tfrecFileIDs, loss])
                 for fileIdx in range(modelParams['activeBatchSize']):
                     fileIDname = str(evtfrecFileIDs[fileIdx][0]) + "_" + str(evtfrecFileIDs[fileIdx][1]) + "_" + str(evtfrecFileIDs[fileIdx][2])
