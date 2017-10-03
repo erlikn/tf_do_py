@@ -1710,6 +1710,7 @@ def itr_170808_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDir
         data['numTrainDatasetExamples'] = 20400
         data['numTestDatasetExamples'] = 2790
         data['lossFunction'] = "Weighted_L2_loss"
+        data['numTuple'] = 5
         ### ITERATION 1
         if itrNum == 1:
             runName = '170808_ITR_B_'+str(itrNum)
@@ -1799,6 +1800,7 @@ def itr_171002_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDir
         data['numTestDatasetExamples'] = 2790
         data['outputSize'] = (data['numParallelModules']-1)*6
         data['lossFunction'] = "Weighted_L2_loss_nTuple"
+        data['numTuple'] = 5
         ### ITERATION 1
         if itrNum == 1:
             runName = '170808_ITR_B_'+str(itrNum)

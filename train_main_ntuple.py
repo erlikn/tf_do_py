@@ -214,11 +214,14 @@ def train(modelParams):
         ########## model_cnn.loss is called in the loss function
         #loss = weighted_loss(targetP, targetT, **modelParams)
         
-        loss = weighted_loss_ntuple(targetP, targetT, **modelParams) # in the ntuple mode, predicting all the n-1 transformation parameters
+        # all target values are predicted
+        loss = model_cnn.loss(targetP, targetT, **modelParams) # in the ntuple mode, predicting all the n-1 transformation parameters
         
         # modelParams[imageDepthChannels]-2 cuz we have n tuples and n-1 transitions => changing index to 0 means depth-2
-        #loss = weighted_params_loss(targetP, targetT[:,:,modelParams['imageDepthChannels']-2], **modelParams)
-        
+        #loss = model_cnn.loss(targetP, targetT[:,:,modelParams['imageDepthChannels']-2], **modelParams)
+        # in a linear target last output size is the last output
+        #loss = model_cnn.loss(targetP, targetT[:,(modelParams['imageDepthChannels']-2)*modelParams['outputSize']:(modelParams['imageDepthChannels']-1)*modelParams['outputSize']], **modelParams)
+
         # pcl based loss
         #loss = pcl_params_loss(pclA, targetP, targetT, **modelParams)
 
