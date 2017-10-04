@@ -608,24 +608,25 @@ def itr_170719_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase, ru
         data['testBatchSize'] = 12
         data['outputSize'] = 6
         data['lossFunction'] = "Weighted_Params_L2_loss"
+        
         ### ITERATION 1
+        runName = '170719_ITR_B_1'
+        data['trainDataDir'] = '../Data/kitti/train_tfrecords'
+        data['testDataDir'] = '../Data/kitti/test_tfrecords'
+        data['trainLogDir'] = trainLogDirBase + runName
+        data['testLogDir'] = testLogDirBase + runName
+        data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+        data['warpedTestDataDir'] = warpedTestDirBase+ runName
+        _set_folders(data['warpedTrainDataDir'])
+        _set_folders(data['warpedTestDataDir'])
+        data['tMatTrainDir'] = data['trainLogDir']+'/target'
+        data['tMatTestDir'] = data['testLogDir']+'/target'
+        _set_folders(data['tMatTrainDir'])
+        _set_folders(data['tMatTestDir'])
+        data['warpOriginalImage'] = True
+        data['batchNorm'] = True
+        data['weightNorm'] = False
         if itrNum == 1:
-            runName = '170719_ITR_B_1'
-            data['trainDataDir'] = '../Data/kitti/train_tfrecords'
-            data['testDataDir'] = '../Data/kitti/test_tfrecords'
-            data['trainLogDir'] = trainLogDirBase + runName
-            data['testLogDir'] = testLogDirBase + runName
-            data['warpedTrainDataDir'] = warpedTrainDirBase + runName
-            data['warpedTestDataDir'] = warpedTestDirBase+ runName
-            _set_folders(data['warpedTrainDataDir'])
-            _set_folders(data['warpedTestDataDir'])
-            data['tMatTrainDir'] = data['trainLogDir']+'/target'
-            data['tMatTestDir'] = data['testLogDir']+'/target'
-            _set_folders(data['tMatTrainDir'])
-            _set_folders(data['tMatTestDir'])
-            data['warpOriginalImage'] = True
-            data['batchNorm'] = True
-            data['weightNorm'] = False
             write_json_file(runName+'.json', data)
         ### ITERATION 2
         if itrNum == 2:
