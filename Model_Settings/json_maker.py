@@ -118,7 +118,8 @@ data = {
     'trainMaxSteps' : 30000,
     'testMaxSteps' : 1,
     'usefp16' : False,
-    'logDevicePlacement' : False
+    'logDevicePlacement' : False,
+    'classification': {'Model' : False, 'binSize' : 0}
     }
 data['testMaxSteps'] = int(np.ceil(data['numTestDatasetExamples']/data['testBatchSize']))
 ####################################################################################
@@ -169,6 +170,7 @@ def write_iterative(runName, itrNum, dataLocal):
     elif runName == '171002_ITR_B': # using 170706_ITR_B but with loss for all n-1 tuples
         itr_171002_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, dataLocal)
     elif runName == '171003_ITR_B': # using 170706_ITR_B but with loss for all n-1 tuples
+        data['classificationModel'] = {'Model' : True, 'binSize' : 32}
         itr_171003_ITR_B_clsf(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, dataLocal)
     else:
         print("--error: Model name not found!")
@@ -604,6 +606,8 @@ def itr_170719_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase, ru
         data['modelShape'] = [2*32, 2*32, 2*32, 2*32, 64, 64, 128, 128, 512, 512]
         data['trainBatchSize'] = 12
         data['testBatchSize'] = 12
+        data['outputSize'] = 6
+        data['lossFunction'] = "Weighted_Params_L2_loss"
         ### ITERATION 1
         if itrNum == 1:
             runName = '170719_ITR_B_1'
@@ -767,7 +771,7 @@ def itr_170808_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDir
         data['testBatchSize'] = 4
         data['numTrainDatasetExamples'] = 20400
         data['numTestDatasetExamples'] = 2790
-        data['lossFunction'] = "Weighted_L2_loss"
+        data['lossFunction'] = "Weighted_Params_L2_loss"
         data['numTuple'] = 5
         ### ITERATION 1
         if itrNum == 1:
@@ -858,7 +862,7 @@ def itr_171002_ITR_B_inception_n5tuple(reCompileITR, trainLogDirBase, testLogDir
         data['numTrainDatasetExamples'] = 20400
         data['numTestDatasetExamples'] = 2790
         data['outputSize'] = (data['numParallelModules']-1)*6
-        data['lossFunction'] = "Weighted_L2_loss_nTuple"
+        data['lossFunction'] = "Weighted_Params_L2_loss_nTuple"
         data['numTuple'] = 5
         ### ITERATION 1
         if itrNum == 1:
@@ -937,22 +941,22 @@ def itr_171003_ITR_B_clsf(reCompileITR, trainLogDirBase, testLogDirBase, runName
     if reCompileITR:
         runPrefix = runName+'_'
         data['modelName'] = 'twin_cnn_4p4l2f_inception'
-        data['numParallelModules'] = 5
-        data['imageDepthChannels'] = 5
+        data['numParallelModules'] = 2
+        data['imageDepthChannels'] = 2
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
-        data['modelShape'] = [5*16, 32, 5*16, 32, 32, 32, 64, 64, 256, 512]
-        data['trainBatchSize'] = 4
-        data['testBatchSize'] = 4
+        data['modelShape'] = [32, 64, 32, 64, 64, 128, 64, 128, 1024]
+        data['trainBatchSize'] = 32
+        data['testBatchSize'] = 32
         data['numTrainDatasetExamples'] = 20400
         data['numTestDatasetExamples'] = 2790
-        data['outputSize'] = (data['numParallelModules']-1)*6
-        data['lossFunction'] = "Weighted_L2_loss_nTuple"
-        data['numTuple'] = 5
+        data['outputSize'] = 6
+        data['lossFunction'] = "Weighted_L2_loss"
+        data['numTuple'] = 2
         ### ITERATION 1
         if itrNum == 1:
             runName = runPrefix+str(itrNum)
-            data['trainDataDir'] = '../Data/kitti/train_tfrecords_5tuple'
-            data['testDataDir'] = '../Data/kitti/test_tfrecords_5tuple'
+            data['trainDataDir'] = '../Data/kitti/train_tfrecords'
+            data['testDataDir'] = '../Data/kitti/test_tfrecords'
             data['trainLogDir'] = trainLogDirBase + runName
             data['testLogDir'] = testLogDirBase + runName
             data['warpedTrainDataDir'] = warpedTrainDirBase + runName
