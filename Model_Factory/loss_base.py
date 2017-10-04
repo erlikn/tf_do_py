@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 
 import tensorflow as tf
+import numpy as np
 
 def add_loss_summaries(total_loss, batchSize):
     """Add summaries for losses in calusa_heatmap model.
