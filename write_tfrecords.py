@@ -34,8 +34,8 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0"
 #from tensorflow.python.client import device_lib
 #print(device_lib.list_local_devices())
 
-import Data_IO.data_input_ntuple as data_input
-import Data_IO.data_output_ntuple as data_output
+import Data_IO.data_input as data_input
+import Data_IO.data_output as data_output
 
 PHASE = 'train'
 ####################################################
