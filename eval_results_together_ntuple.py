@@ -18,8 +18,13 @@ import Data_IO.kitti_shared as kitti
 #               '170706_ITR_B_2.json',
 #               '170706_ITR_B_3.json'
 #               ]
-#INITINDEX = 0
-#NUMTUPLES = 2
+jsonName = '170706_ITR_B'
+jsonItrs = [1,
+            2,
+             3
+            ]
+INITINDEX = 0
+NUMTUPLES = 2
 
 
 # BAD zigzagy as the orientation and translation are seperate
@@ -29,12 +34,12 @@ import Data_IO.kitti_shared as kitti
 #INITINDEX = 0
 #NUMTUPLES = 2
 
-jsonName = '170719_ITR_B'
-jsonItrs = [1,
-            2
-            ]
-INITINDEX = 0
-NUMTUPLES = 2
+#jsonName = '170719_ITR_B'
+#jsonItrs = [1,
+#            2
+#            ]
+#INITINDEX = 0
+#NUMTUPLES = 2
 
 
 #jsonsToRead = ['170808_ITR_B_1.json',
