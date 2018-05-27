@@ -305,7 +305,7 @@ def conv_fire_parallel_residual_module(name, prevLayerOut, prevLayerDim, histori
                 else:
                     convRelu = tf.concat([convRelu, convReluPrl], axis=3)
 
-            _activation_summary(convRelu)
+            #_activation_summary(convRelu)
 
     return convRelu, numParallelModules*fireDimsSingleModule[cnnName]
 
@@ -391,7 +391,7 @@ def conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, fireDimsSingleMo
                 else:
                     convRelu = tf.concat([convRelu, convReluPrl], axis=3)
 
-            _activation_summary(convRelu)
+            #_activation_summary(convRelu)
 
     return convRelu, numParallelModules*fireDimsSingleModule[cnnName]
 
@@ -410,8 +410,8 @@ def conv_fire_parallel_inception_module(name, prevLayerOut, prevLayerDim, fireDi
         fireOut_3x3, prevExpandDim_3x3 = conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, {'cnn3x3': fireDimsSingleModule.get('cnn3x3')}, wd, **kwargs)
     if (fireDimsSingleModule.get('cnn5x5')):
         fireOut_5x5, prevExpandDim_5x5 = conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, {'cnn5x5': fireDimsSingleModule.get('cnn5x5')}, wd, **kwargs)
-    #if (fireDimsSingleModule.get('cnn7x7')):
-    #    fireOut_1x1, prevExpandDim_1x1 = conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, {'cnn7x7': fireDimsSingleModule.get('cnn7x7')}, wd, **kwargs)
+    if (fireDimsSingleModule.get('cnn7x7')):
+        fireOut_7x7, prevExpandDim_7x7 = conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, {'cnn7x7': fireDimsSingleModule.get('cnn7x7')}, wd, **kwargs)
     
     fireOut = tf.concat([fireOut_1x1, fireOut_3x3, fireOut_5x5], axis=3)
 
@@ -478,7 +478,7 @@ def conv_fire_residual_module(name, prevLayerOut, prevLayerDim, historicLayerOut
 
             # residual
             convRelu = tf.nn.relu(historicLayerOut+conv, name=scope.name)
-            _activation_summary(convRelu)
+            #_activation_summary(convRelu)
 
         return convRelu, fireDims[cnnName]
 
@@ -541,7 +541,7 @@ def conv_fire_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwar
 
             conv = tf.nn.bias_add(conv, biases)
             convRelu = tf.nn.relu(conv, name=scope.name)
-            _activation_summary(convRelu)
+            #_activation_summary(convRelu)
 
         return convRelu, fireDims[cnnName]
         
@@ -589,7 +589,7 @@ def fc_fire_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwargs
                                      initializer=tf.constant_initializer(0.0), dtype=dtype)
             fc = tf.nn.bias_add(fc, biases)
             fcRelu = tf.nn.relu(fc, name=scope.name)
-            _activation_summary(fcRelu)
+            #_activation_summary(fcRelu)
         
         return fcRelu, fireDims['fc']
 def fc_fire_LSTM_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwargs):
@@ -621,7 +621,7 @@ def fc_fire_LSTM_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **k
                                      initializer=tf.constant_initializer(0.0), dtype=dtype)
             fc = tf.nn.bias_add(fc, biases)
             fcRelu = tf.nn.relu(fc, name=scope.name)
-            _activation_summary(fcRelu)
+            #_activation_summary(fcRelu)
         
         return fcRelu, fireDims['fc']
 def fc_regression_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwargs):
@@ -652,7 +652,7 @@ def fc_regression_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **
             biases = tf.get_variable('biases', fireDims['fc'],
                                      initializer=tf.constant_initializer(0.0), dtype=dtype)
             fc = tf.nn.bias_add(fc, biases)
-            _activation_summary(fc)
+            #_activation_summary(fc)
         
         return fc, fireDims['fc']
 

@@ -255,7 +255,7 @@ def _make_image(depthview, rXYZ):
     for i in range(0, yCent.shape[0]):
         yCent[i] = (yBinEdges[i]+yBinEdges[i+1])/2
     # make image of size 128x512 : 64 -> 128 (double sampling the height)
-    depthImage = np.zeros(shape=[128, 512])
+    depthImage = np.zeros(shape=[64, 512])
     # normalize range values
     #depthview[2] = (depthview[2]-np.min(depthview[2]))/(np.max(depthview[2])-np.min(depthview[2]))
     depthview[2] = _normalize_Z_weighted(depthview[2])
@@ -268,10 +268,7 @@ def _make_image(depthview, rXYZ):
     for i in range(depthview.shape[1]-1, -1, -1): # traverse descending
         yidx = np.argmin(np.abs(yCent-depthview[1, idxs[i]]))
         xidx = np.argmin(np.abs(xCent-depthview[0, idxs[i]]))
-        # hieght is 2x64
-        yidx = yidx*2
         depthImage[yidx, xidx] = depthview[2, idxs[i]]
-        depthImage[yidx+1, xidx] = depthview[2, idxs[i]]
     return depthImage
 
 def get_depth_image_pano_pclView(xyz, height=1.6):

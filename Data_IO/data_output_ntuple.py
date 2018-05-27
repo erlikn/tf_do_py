@@ -82,7 +82,7 @@ def output_loop(batchImages, batchPcl, bTargetT, targetP, batchTFrecFileIDs, i, 
     outTargetT[i,:,numTuples-2] = targetRes
     # Write each Tensorflow record
     filename = str(batchTFrecFileIDs[i][0]+100) + "_" + str(batchTFrecFileIDs[i][1]+100000) + "_" + str(batchTFrecFileIDs[i][2]+100000)
-    tfrecord_io.tfrecord_writer_ntuple(batchTFrecFileIDs[i],
+    tfrecord_io.tfrec_write_nt_pcl_dep(batchTFrecFileIDs[i],
                                        outBatchPcl[i],
                                        outBatchImages[i],
                                        outTargetT[i],

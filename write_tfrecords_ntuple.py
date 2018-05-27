@@ -29,7 +29,7 @@ import tensorflow as tf
 
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 #from tensorflow.python.client import device_lib
 #print(device_lib.list_local_devices())
@@ -225,11 +225,13 @@ def train(modelParams):
         targetP = model_cnn.inference(images, **modelParams)
         
         # Calculate loss. 2 options:
+        # all target values are predicted
 
+        loss = model_cnn.loss(targetP, targetT, **modelParams) # in the ntuple mode, predicting all the n-1 transformation parameters
         # use mask to get degrees significant
         # What about adaptive mask to zoom into differences at each CNN stack !!!
         #loss = model_cnn.weighted_loss(targetP, targetT, **modelParams)
-        loss = weighted_params_loss(targetP, targetT[:,:,modelParams['imageDepthChannels']-2], **modelParams)
+        #loss = weighted_params_loss(targetP, targetT[:,:,modelParams['imageDepthChannels']-2], **modelParams)
         # pcl based loss
         #loss = model_cnn.pcl_params_loss(pclA, targetP, targetT, **modelParams)
 
@@ -246,7 +248,7 @@ def train(modelParams):
         #init = tf.initialize_all_variables()
         init = tf.global_variables_initializer()
 
-        opCheck = tf.add_check_numerics_ops()
+        #opCheck = tf.add_check_numerics_ops()
         # Start running operations on the Graph.
         config = tf.ConfigProto(log_device_placement=modelParams['logDevicePlacement'])
         config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1

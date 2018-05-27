@@ -463,7 +463,43 @@ def parse_exp_proto_nt_prevPred_colorOnly(exampleSerialized, **kwargs):
     prevPred = _get_target_ntuple(features['prevPred'], kwargs.get('logicalOutputSize'), numTuples-1)
     return imagesColor, target, prevPred, fileID
 
-def tfrecord_writer_ntuple(fileID, pcl, imgDepth, tMatTarget, tfRecFolder, numTuples, tfFileName):
+
+def tfrec_write_nt_pcl_dep(fileID, 
+                           pcl, imgDepth, 
+                           tMatTarget, 
+                           tfRecFolder, numTuples, tfFileName):
+    """
+    Converts a dataset to tfrecords
+    fileID = seqID, i, i+1
+    imgDepth => int8 a.k.a. char (numTuple x 128 x 512)
+    tMatTarget => will be converted to float32 with size numTuple x 6
+    pcl => will be converted to float16 with size (numTuple x 3 x PCLCOLS)
+    """
+    tfRecordPath = tfRecFolder + tfFileName + ".tfrecords"
+    # Depth Images
+    rows = imgDepth.shape[0]
+    cols = imgDepth.shape[1]
+    flatImage = imgDepth.reshape(rows*cols*numTuples)
+    flatImage = np.asarray(flatImage, np.float32)
+    flatImageList = flatImage.tostring()
+    # Point Clouds
+    pcl = pcl.reshape(pcl.shape[0]*pcl.shape[1]*numTuples) # 3 x PCL_COLS
+    pclList = pcl.tolist()
+    # Target Transformation
+    tMatTarget = tMatTarget.reshape(tMatTarget.shape[0]*(numTuples-1))
+    tMatTargetList = tMatTarget.tolist()
+
+    writer = tf.python_io.TFRecordWriter(tfRecordPath)
+    example = tf.train.Example(features=tf.train.Features(feature={
+        'fileID': _int64_array(fileID),
+        'images': _bytes_feature(flatImageList),
+        'pcl': _float_nparray(pclList), # 2D np array
+        'target': _float_nparray(tMatTargetList) # 2D np array
+        }))
+    writer.write(example.SerializeToString())
+    writer.close()
+
+def tfrecord_writer_ntuple(fileID, pcl, imgDepth, imgColor, tMatTarget, tfRecFolder, numTuples, tfFileName):
     """
     Converts a dataset to tfrecords
     fileID = seqID, i, i+1
