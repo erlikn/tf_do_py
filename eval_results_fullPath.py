@@ -66,12 +66,15 @@ def _get_all_predictions(pFilenames, modelParams):
         predAllList.append(seqList)
     return predAllList
 
-def _get_pose_from_param(pParam):
+def _get_pose_from_param(pParam, modelParams):
     poses = list()
     for i in range(pParam.shape[0]):
         pposep = pParam[i]
         #print(pposep)
-        poses.append(kitti._get_tmat_from_params(pposep).reshape(3*4))
+        if modelParams['outputSize'] == 6:
+            poses.append(kitti._get_tmat_from_params_2018(pposep).reshape(3*4))
+        else:
+            poses.append(pposep.reshape(3*4))
     return poses
 
 def _get_param_from_pose(poselist):
@@ -213,6 +216,27 @@ def _get_p_map_w_orig(pPoseAB, gPose2o, numTuple):
     #### PathMap consists of all points in the origin frame coordinates
     return pathMap
 
+def _get_p_map_w_orig_CORRECT(pPoseB2AList, gPose2o, numTuple):
+    """
+    get the predicted truth path map
+    poses are w.r.t. previous frame
+    number of tuples in the batch. numTuple-1 transformation matrices. numTuple-2 will be added from gPose2o
+    """
+    origin = np.array([[0], [0], [0]], dtype=np.float32)
+    pathMap = np.ndarray(shape=[3,0], dtype=np.float32)
+    poseA2o = kitti._get_3x4_tmat(gPose2o[0])
+    pathMap = np.append(pathMap, origin, axis=1)
+    pathMap = np.append(pathMap, kitti.transform_pcl(origin, poseA2o), axis=1)
+    for i in range(len(pPoseB2AList)):
+        poseB2A = kitti._get_3x4_tmat(np.array(pPoseB2AList[i]))
+        poseB2o = kitti._remove_row4_tmat(np.matmul(kitti._add_row4_tmat(poseA2o), kitti._add_row4_tmat(poseB2A)))
+        oAtOrigFrame = kitti.transform_pcl(origin, poseB2o)
+        pathMap = np.append(pathMap, oAtOrigFrame, axis=1)
+        poseA2o = np.copy(poseB2o)
+    #### PathMap consists of all points in the origin frame coordinates
+    return pathMap
+
+
 def _get_p_map_w_orig_points(pPoseAB, gPose2o):
     """
     Original Coordinates are used and only transformation for each frame is plotted
@@ -262,6 +286,42 @@ def _get_control_params(modelParams):
         modelParams['seqIDs'] = seqIDtest
     return modelParams
 
+################################
+def vis_path_all_perSeq(gtxyz, p1xyzList, p2xyzList, legendNamesx3):
+    import matplotlib.pyplot as plt
+    plotList = list()
+    legendNames = list()
+    legendNames.append(legendNamesx3[0])
+    gt, = plt.plot(gtxyz[0], gtxyz[1], 'r')
+    plotList.append(gt)
+    colorList1 = ['b', 'g', 'm', 'yellow']
+    colorList2 = ['c', 'mediumaquamarine', 'orchid', 'goldenrod']
+    for i in range(len(p1xyzList)):
+        pred1, = plt.plot(p1xyzList[i][0], p1xyzList[i][1], colorList1[i])
+        plotList.append(pred1)
+        legendNames.append(legendNamesx3[1]+"_"+str(i+1))
+        pred2, = plt.plot(p2xyzList[i][0], p2xyzList[i][1], colorList2[i], alpha=0.5)
+        plotList.append(pred2)
+        legendNames.append(legendNamesx3[2]+"_"+str(i+1))
+        
+    plt.legend(plotList, legendNames)
+    plt.show()
+
+def vis_path_all(gtxyz, p1xyz, p2xyz, legendNamesx3):
+    import matplotlib.pyplot as plt
+    gt, = plt.plot(gtxyz[0], gtxyz[1], 'r')
+    pred1, = plt.plot(p1xyz[0], p1xyz[1], 'b')
+    pred2, = plt.plot(p2xyz[0], p2xyz[1], 'c', alpha=0.5)
+    plt.legend([gt, pred1, pred2], legendNamesx3)
+    plt.show()
+
+def vis_path(xyz, graphType=""):
+    import matplotlib.pyplot as plt
+    graph = plt.plot(xyz[0], xyz[1], 'm')
+    plt.legend(graph, [graphType])
+    plt.show()
+################################
+
 def evaluate(modelParamsList, prevPParam=list()):
     # Read all prediction posefiles and sort them based on the seqID and frameID
     seqIDs = modelParamsList[0]['seqIDs']
@@ -309,13 +369,14 @@ def evaluate(modelParamsList, prevPParam=list()):
                 pParam.append(pPoseParam[j]['tmat'])
             pParam = np.array(pParam)
             if (len(PParamList) != 0):
+                print('sequential prediction')
                 pParam = pParam + PParamList[trnItr-1]
             #print("         Abs error:", np.sum(np.abs(pParam-np.array(gtParam)), axis=0))
             #print("         +/- error:", np.sum((pParam-np.array(gtParam)), axis=0))
             PParamList.append(pParam)
-            pPose = _get_pose_from_param(pParam)
+            pPose = _get_pose_from_param(pParam, modelParams)
             # Use only sequential
-            pMapSeqList.append(_get_p_map_w_orig(pPose, gtPose, modelParams['numTuple']))
+            pMapSeqList.append(_get_p_map_w_orig_CORRECT(pPose, gtPose, modelParams['numTuple']))
             # Use GTforLoc
             pMapSeqWgtFramesList.append(_get_p_map_w_orig_points(pPose, gtPose))
 
@@ -323,47 +384,14 @@ def evaluate(modelParamsList, prevPParam=list()):
         print("   Displaying---")
         vis_path_all_perSeq(gtMapOrig, pMapSeqList, pMapSeqWgtFramesList, ['GT', 'PredSeq', 'PSeqWgtFrms'])
     return
-################################
-def vis_path_all_perSeq(gtxyz, p1xyzList, p2xyzList, legendNamesx3):
-    import matplotlib.pyplot as plt
-    plotList = list()
-    legendNames = list()
-    legendNames.append(legendNamesx3[0])
-    gt, = plt.plot(gtxyz[0], gtxyz[1], 'r')
-    plotList.append(gt)
-    colorList1 = ['b', 'g', 'm', 'yellow']
-    colorList2 = ['c', 'mediumaquamarine', 'orchid', 'goldenrod']
-    for i in range(len(p1xyzList)):
-        pred1, = plt.plot(p1xyzList[i][0], p1xyzList[i][1], colorList1[i])
-        #pred2, = plt.plot(p2xyzList[i][0], p2xyzList[i][1], colorList2[i], alpha=0.5)
-        plotList.append(pred1)
-        legendNames.append(legendNamesx3[1]+"_"+str(i+1))
-        #plotList.append(pred2)
-        #legendNames.append(legendNamesx3[2]+"_"+str(i+1))
-        
-    plt.legend(plotList, legendNames)
-    plt.show()
-
-def vis_path_all(gtxyz, p1xyz, p2xyz, legendNamesx3):
-    import matplotlib.pyplot as plt
-    gt, = plt.plot(gtxyz[0], gtxyz[1], 'r')
-    pred1, = plt.plot(p1xyz[0], p1xyz[1], 'b')
-    pred2, = plt.plot(p2xyz[0], p2xyz[1], 'c', alpha=0.5)
-    plt.legend([gt, pred1, pred2], legendNamesx3)
-    plt.show()
-
-def vis_path(xyz, graphType=""):
-    import matplotlib.pyplot as plt
-    graph = plt.plot(xyz[0], xyz[1], 'm')
-    plt.legend(graph, [graphType])
-    plt.show()
 
 
 def main(modelName, itrNum):  # pylint: disable=unused-argumDt
-    jsonToRead = modelName+'_'+str(itrNum)+'.json'
-    print("Reading %s" % jsonToRead)
     modelParamsList = list()
-    modelParamsList.append(read_model_params(jsonToRead))
+    for i in range(len(itrNum)):
+        jsonToRead = modelName+'_'+str(itrNum[i])+'.json'
+        print("Reading %s" % jsonToRead)
+        modelParamsList.append(read_model_params(jsonToRead))
     evaluate(modelParamsList)
     return
 
@@ -371,7 +399,9 @@ if __name__ == '__main__':
     if (len(sys.argv)<3):
         raise Exception("'Enter 'model name' and 'iteration number'")
     modelName = sys.argv[1]
-    itrNum = int(sys.argv[2])
-    if itrNum>4 or itrNum<0:
-        raise Exception('iteration number should only be from 1 to 4 inclusive')
+    itrNum = list()
+    for i in range(len(sys.argv)-2):
+        itrNum.append(int(sys.argv[i+2]))
+        if itrNum[i]>4 or itrNum[i]<1:
+            raise Exception('iteration number should only be from 1 to 4 inclusive')
     main(modelName, itrNum)

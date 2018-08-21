@@ -29,7 +29,7 @@ import tensorflow as tf
 
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 #from tensorflow.python.client import device_lib
 #print(device_lib.list_local_devices())
@@ -387,9 +387,9 @@ def main(argv=None):  # pylint: disable=unused-argumDt
     #print('Test  Warp Output: %s' % modelParams['warpedTestDataDir'])
     print('')
     print('')
-    if input("(Overwrite WARNING) Did you change logs directory? (y) ") != "y":
-        print("Please consider changing logs directory in order to avoid overwrite!")
-        return
+    #if input("(Overwrite WARNING) Did you change logs directory? (y) ") != "y":
+    #    print("Please consider changing logs directory in order to avoid overwrite!")
+    #    return
     if tf.gfile.Exists(modelParams['trainLogDir']):
         tf.gfile.DeleteRecursively(modelParams['trainLogDir'])
     tf.gfile.MakeDirs(modelParams['trainLogDir'])

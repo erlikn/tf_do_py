@@ -413,9 +413,14 @@ def conv_fire_parallel_inception_module(name, prevLayerOut, prevLayerDim, fireDi
     if (fireDimsSingleModule.get('cnn7x7')):
         fireOut_7x7, prevExpandDim_7x7 = conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, {'cnn7x7': fireDimsSingleModule.get('cnn7x7')}, wd, **kwargs)
     
-    fireOut = tf.concat([fireOut_1x1, fireOut_3x3, fireOut_5x5], axis=3)
+    if (fireDimsSingleModule.get('cnn1x1')) and (fireDimsSingleModule.get('cnn3x3')) and (fireDimsSingleModule.get('cnn5x5')):
+        fireOut = tf.concat([fireOut_1x1, fireOut_3x3, fireOut_5x5], axis=3)
+        prevExpandDim = (prevExpandDim_1x1+prevExpandDim_3x3+prevExpandDim_5x5)
+    if (fireDimsSingleModule.get('cnn3x3')) and (fireDimsSingleModule.get('cnn5x5')) and (fireDimsSingleModule.get('cnn7x7')):
+        fireOut = tf.concat([fireOut_3x3, fireOut_5x5, fireOut_7x7], axis=3)
+        prevExpandDim = (prevExpandDim_3x3+prevExpandDim_5x5+prevExpandDim_7x7)
 
-    return fireOut, (prevExpandDim_1x1+prevExpandDim_3x3+prevExpandDim_5x5)
+    return fireOut, prevExpandDim
 
 def conv_fire_residual_module(name, prevLayerOut, prevLayerDim, historicLayerOut, historicLayerDim, fireDims, wd=None, **kwargs):
     USE_FP_16 = kwargs.get('usefp16')
@@ -553,12 +558,17 @@ def conv_fire_inception_module(name, prevLayerOut, prevLayerDim, fireDims, wd=No
         fireOut_3x3, prevExpandDim_3x3 = conv_fire_module(name, prevLayerOut, prevLayerDim, {'cnn3x3': fireDims.get('cnn3x3')}, wd, **kwargs)
     if (fireDims.get('cnn5x5')):
         fireOut_5x5, prevExpandDim_5x5 = conv_fire_module(name, prevLayerOut, prevLayerDim, {'cnn5x5': fireDims.get('cnn5x5')}, wd, **kwargs)
-    #if (fireDims.get('cnn7x7')):
-    #    fireOut_1x1, prevExpandDim_1x1 = conv_fire_module(name, prevLayerOut, prevLayerDim, {'cnn7x7': fireDims.get('cnn7x7')}, wd, **kwargs)
+    if (fireDims.get('cnn7x7')):
+        fireOut_7x7, prevExpandDim_7x7 = conv_fire_module(name, prevLayerOut, prevLayerDim, {'cnn7x7': fireDims.get('cnn7x7')}, wd, **kwargs)
     
-    fireOut = tf.concat([fireOut_1x1, fireOut_3x3, fireOut_5x5], axis=3)
+    if (fireDims.get('cnn1x1')) and (fireDims.get('cnn3x3')) and (fireDims.get('cnn5x5')):
+        fireOut = tf.concat([fireOut_1x1, fireOut_3x3, fireOut_5x5], axis=3)
+        prevExpandDim = (prevExpandDim_1x1+prevExpandDim_3x3+prevExpandDim_5x5)
+    if (fireDims.get('cnn3x3')) and (fireDims.get('cnn5x5')) and (fireDims.get('cnn7x7')):
+        fireOut = tf.concat([fireOut_3x3, fireOut_5x5, fireOut_7x7], axis=3)
+        prevExpandDim = (prevExpandDim_3x3+prevExpandDim_5x5+prevExpandDim_7x7)
 
-    return fireOut, (prevExpandDim_1x1+prevExpandDim_3x3+prevExpandDim_5x5)
+    return fireOut, prevExpandDim
 
 def fc_fire_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwargs):
     USE_FP_16 = kwargs.get('usefp16')

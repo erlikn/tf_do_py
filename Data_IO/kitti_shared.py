@@ -89,6 +89,28 @@ def _get_tmat_from_params(abgxyz):
            ], dtype=np.float32)
     return tmat
 
+def _get_tmat_from_params_2018(params):
+    R_x = np.array([[1,         0,                  0                   ],
+                    [0,         math.cos(params[0]), -math.sin(params[0]) ],
+                    [0,         math.sin(params[0]), math.cos(params[0])  ]
+                    ])
+         
+         
+                     
+    R_y = np.array([[math.cos(params[1]),    0,      math.sin(params[1])  ],
+                    [0,                     1,      0                   ],
+                    [-math.sin(params[1]),   0,      math.cos(params[1])  ]
+                    ])
+                 
+    R_z = np.array([[math.cos(params[2]),    -math.sin(params[2]),    0],
+                    [math.sin(params[2]),    math.cos(params[2]),     0],
+                    [0,                     0,                      1]
+                    ])
+                     
+                     
+    R = np.dot(R_z, np.dot( R_y, R_x ))
+    T = np.append(R, [[params[3]], [params[4]], [params[5]]], axis=1)
+    return T
 ############################################################################
 def get_pose_path(poseFolder, seqID):
     return poseFolder + seqID + ".txt"
