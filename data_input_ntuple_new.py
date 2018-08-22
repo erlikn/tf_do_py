@@ -72,34 +72,17 @@ tf.app.flags.DEFINE_integer('inputQueueMemoryFactor', 2,
                             """4, 2 or 1, if host memory is constrained. See """
                             """comments in code for more details.""")
 
-def image_processing(image):
+def image_preprocessing(image, **kwargs):
     """
         Reads all dataset and normalize images
         
-        Each image is re-written as imageChannel-(meanChannelDataset) / stddev(channelDataset) normalized to [-1,1]
+        Each image is re-written as imageChannel-(meanChannel)
     """
-    meanChannels, stdChannels = tf.nn.moments(image, axes=[0, 1]) # rowxcolx6 => [meanChannel1 meanChannel2]
+    ############################ if each dim has a different range then mean it per dim
+    meanChannels, stdChannels = tf.nn.moments(image, axes=[1, 2]) # b*r*c*d => meanPerChannel
     # SUBTRACT MEAN
-    meanChannels = tf.reshape(meanChannels, [1,1,-1]) # prepare for channel based subtraction
+    meanChannels = tf.reshape(meanChannels, [kwargs.get('activeBatchSize') 1,1,-1]) # prepare for channel based subtraction
     imagenorm = tf.subtract(image, meanChannels)
-    # DIVIDE BY STANDARD DEVIATION
-    stdChannels = tf.reshape(stdChannels, [1,1,-1]) # prepare for channel based scalar division
-    stdChannels = tf.cond(tf.reduce_all(tf.not_equal(stdChannels,tf.zeros_like(stdChannels))),
-                          lambda: stdChannels,
-                          lambda: tf.ones_like(stdChannels))
-    imagenorm = tf.div(imagenorm, stdChannels)
-    # SCALE TO [-1,1]
-    maxChannels = tf.reduce_max(imagenorm, [0,1])
-    minChannels = tf.reduce_min(imagenorm, [0,1])
-    maxminDif = tf.subtract(maxChannels, minChannels)
-    maxminSum = tf.add(maxChannels, minChannels)
-    maxminDif = tf.reshape(maxminDif, [1,1,-1])
-    maxminSum = tf.reshape(maxminSum, [1,1,-1])
-    coef = tf.constant(2.0, shape=[1,1,int(image.get_shape()[2])])
-    maxminDif = tf.cond(tf.reduce_all(tf.not_equal(maxminDif,tf.zeros_like(maxminDif))),
-                                      lambda: maxminDif, 
-                                      lambda: tf.ones_like(maxminDif))
-    imagenorm = tf.div(tf.subtract(tf.multiply(coef,imagenorm), maxminSum), maxminDif) # ((2*x)-(max+min))/(max-min)
     return imagenorm
 
 def validate_for_nan(tensorT):
@@ -140,6 +123,7 @@ def fetch_clsf(numPreprocessThreads, exampleSerialized, sampleData, **kwargs):
     for i in range(kwargs.get('imageDepthChannels')):
         tf.summary.image('images_'+str(i)+'_', images[i])
     
+    batchImages = image_preprocessing(batchImages, **kwargs)
     if kwargs.get('usefp16'):
         batchImages = tf.cast(batchImages, tf.float16)
         batchPclA = tf.cast(batchPcl, tf.float16)
@@ -187,6 +171,8 @@ def fetch_reg(numPreprocessThreads, exampleSerialized, sampleData, **kwargs):
     for i in range(kwargs.get('numTuple')):
         tf.summary.image('images_'+str(i)+'_', images[i])
     
+    batchImages = image_preprocessing(batchImages, **kwargs)
+
     if kwargs.get('usefp16'):
         batchImages = tf.cast(batchImages, tf.float16)
         batchPcl = tf.cast(batchPcl, tf.float16)
