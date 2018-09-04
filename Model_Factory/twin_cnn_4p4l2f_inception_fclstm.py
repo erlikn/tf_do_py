@@ -46,11 +46,9 @@ USE_FP_16 = False
 # names of the summaries when visualizing a model.
 TOWER_NAME = 'tower'
 
-lstmInput = tf.zeros(shape=[4, activeBatchSize, rows, cols, channels])
-
 def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13], existingParams=[]
     modelShape = kwargs.get('modelShape')
-    numParallelModules = kwargs.get('numParallelModules')
+    numParalModules = kwargs.get('numParallelModules')
     wd = None #0.0002
     USE_FP_16 = kwargs.get('usefp16')
     dtype = tf.float16 if USE_FP_16 else tf.float32
@@ -58,15 +56,15 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
     batchSize = kwargs.get('activeBatchSize', None)
 
     ############# CONV1_TWIN 3x3 conv, 2 input dims, 2 parallel modules, 64 output dims (filters)
-    fireOut, prevExpandDim = model_base.conv_fire_parallel_inception_module('conv1', images, kwargs.get('imageDepthChannels'), numParallelModules,
+    fireOut, prevExpandDim = model_base.conv_fire_parallel_inception_module('conv1', images, kwargs.get('imageDepthChannels'), numParalModules,
                                                                   {'cnn1x1': modelShape[0], 'cnn3x3': modelShape[0], 'cnn5x5': modelShape[0]},
                                                                   wd, **kwargs)
     # calc batch norm CONV1_TWIN
     if kwargs.get('batchNorm'):
         fireOut = model_base.batch_norm('batch_norm', fireOut, dtype)
-    ############# CONV2_TWIN
-    fireOut, prevExpandDim = model_base.conv_fire_parallel_module('conv2', fireOut, prevExpandDim, numParallelModules,
-                                                                  {'cnn1x1': modelShape[1]},
+    ############# CONV2_TWIN    
+    fireOut, prevExpandDim = model_base.conv_fire_parallel_module('conv2', fireOut, prevExpandDim, numParalModules,
+                                                                  {'cnn1x1': modelShape[3]},
                                                                   wd, **kwargs)
     # calc batch norm CONV2_TWIN
     if kwargs.get('batchNorm'):
@@ -75,14 +73,14 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
     pool = tf.nn.max_pool(fireOut, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1],
                           padding='SAME', name='maxpool1')
     ############# CONV3_TWIN
-    fireOut, prevExpandDim = model_base.conv_fire_parallel_inception_module('conv3', pool, prevExpandDim, numParallelModules,
+    fireOut, prevExpandDim = model_base.conv_fire_parallel_inception_module('conv3', pool, prevExpandDim, numParalModules,
                                                                   {'cnn1x1': modelShape[2], 'cnn3x3': modelShape[2], 'cnn5x5': modelShape[2]},
                                                                   wd, **kwargs)
     # calc batch norm CONV3_TWIN
     if kwargs.get('batchNorm'):
         fireOut = model_base.batch_norm('batch_norm', fireOut, dtype)
     ############# CONV4_TWIN
-    fireOut, prevExpandDim = model_base.conv_fire_parallel_module('conv4', fireOut, prevExpandDim, numParallelModules,
+    fireOut, prevExpandDim = model_base.conv_fire_parallel_module('conv4', fireOut, prevExpandDim, numParalModules,
                                                                   {'cnn1x1': modelShape[3]},
                                                                   wd, **kwargs)
    # calc batch norm CONV4_TWIN
@@ -94,21 +92,23 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
 
     ################################# Correlate Sequential Data to each other t, t+1
     ## We have data as [B, r, c, nt*d]. We transform it to [B, r, c, (nt-1)*2d]
-    fireOut = tf.split(fireOut, numParallelModules, 3) # split along last dimension to [nt] places
+    fireOut = tf.split(pool, numParalModules, 3) # split along last dimension to [nt] places
     fireOut[0] = tf.concat([fireOut[0], fireOut[1]], 3)
-    for spl in range(1, numParallelModules-1):
+    numSeqModules = numParalModules-1
+    for spl in range(1, numSeqModules):
         fireOut[0] = tf.concat([fireOut[0], fireOut[spl], fireOut[spl+1]], 3)
     fireOut = fireOut[0]
     prevExpandDim = int(fireOut.get_shape()[3])
+    print('+++++ in_seq', fireOut.get_shape())
     ############# CONV5
-    fireOut, prevExpandDim = model_base.conv_fire_parallel_inception_module('conv5', pool, prevExpandDim, numParallelModules-1,
+    fireOut, prevExpandDim = model_base.conv_fire_parallel_inception_module('conv5', fireOut, prevExpandDim, numSeqModules,
                                                                   {'cnn1x1': modelShape[4], 'cnn3x3': modelShape[4], 'cnn5x5': modelShape[4]},
                                                          wd, **kwargs)
     # calc batch norm CONV5
     if kwargs.get('batchNorm'):
         fireOut = model_base.batch_norm('batch_norm', fireOut, dtype)
     ############# CONV6
-    fireOut, prevExpandDim = model_base.conv_fire_parallel_module('conv6', fireOut, prevExpandDim, numParallelModules-1,
+    fireOut, prevExpandDim = model_base.conv_fire_parallel_module('conv6', fireOut, prevExpandDim, numSeqModules,
                                                                   {'cnn1x1': modelShape[5]},
                                                          wd, **kwargs)
     # calc batch norm CONV6
@@ -118,14 +118,14 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
     pool = tf.nn.max_pool(fireOut, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1],
                           padding='SAME', name='maxpool3')
     ############# CONV7
-    fireOut, prevExpandDim = model_base.conv_fire_parallel_inception_module('conv7', pool, prevExpandDim, numParallelModules-1,
+    fireOut, prevExpandDim = model_base.conv_fire_parallel_inception_module('conv7', pool, prevExpandDim, numSeqModules,
                                                                   {'cnn1x1': modelShape[6], 'cnn3x3': modelShape[6], 'cnn5x5': modelShape[6]},
                                                          wd, **kwargs)
     # calc batch norm CONV7
     if kwargs.get('batchNorm'):
         fireOut = model_base.batch_norm('batch_norm', fireOut, dtype)
     ############# CONV8
-    fireOut, prevExpandDim = model_base.conv_fire_parallel_module('conv8', fireOut, prevExpandDim, numParallelModules-1,
+    fireOut, prevExpandDim = model_base.conv_fire_parallel_module('conv8', fireOut, prevExpandDim, numSeqModules,
                                                                   {'cnn1x1': modelShape[7]},
                                                          wd, **kwargs)
     # calc batch norm CONV8
@@ -137,18 +137,23 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
         fireOut = tf.nn.dropout(fireOut, keepProb, name="dropout")
     
     ###### Prepare for fully connected layers
-    print(fireOut.get_shape())
+    print('+++++ FC_inp', fireOut.get_shape(), numSeqModules)
     # Reshape firout for LSTM
     # fireout =  [B, r, c, (nt-1)*d]
     #  split---> (nt-1)[B, r, c, d]
     #  stack---> [nt-1, B, r, c, d] ## Static_RNN uses this format
     #  swap ---> [B, nt-1, r, c, d] ## Dynamic_RNN uses this format -- BETTER 
     # reshape = [B, nt-1, r*c*d]
-    fireOut = tf.transpose(tf.stack(tf.split(fireOut, numParallelModules-1, 3), 0), perm=[1,0,2,3,4])
-    fireOutFlat = tf.reshape(fireOut, [numParallelModules-1, batchSize, -1])
-    prevExpandDim = int(fireOutFlat.get_shape()[2])
+    ### RNN ---> time_major = False
+    #fireOut = tf.transpose(tf.stack(tf.split(fireOut, numSeqModules, 3), 0), perm=[1,0,2,3,4])
+    #fireOut = tf.reshape(fireOut, [numSeqModules, batchSize, -1])
+    ### RNN ---> time_major = true
+    fireOut = tf.stack(tf.split(fireOut, numSeqModules, 3), 0)
+    fireOut = tf.reshape(fireOut, [batchSize, numSeqModules, -1])
+    print('+++++ de_seq', fireOut.get_shape())
+    prevExpandDim = int(fireOut.get_shape()[2])
     ############# FC1-LSTM layer with 1024 hidden celss
-    fireOut, prevExpandDim = model_base.fc_fire_LSTM_module('fclstm1', fireOutFlat, prevExpandDim,
+    fireOut, prevExpandDim = model_base.fc_fire_LSTM_module('fclstm1', fireOut, prevExpandDim,
                                                        {'fclstm': modelShape[8]},
                                                        wd, **kwargs)
     # fireOut is a 

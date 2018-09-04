@@ -181,6 +181,8 @@ def write_iterative(runName, itrNum, dataLocal):
         itr_180523_170706_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, dataLocal)
     elif runName == '180527_170706': # using 170706_ITR_B but with loss for all n-1 tuples
         itr_180527_170706_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, dataLocal)
+    elif runName == '180822_lstm': # using 170706_ITR_B but with loss for all n-1 tuples
+        itr_180822_170706_ITR_B_incep_lstm(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, dataLocal)
     else:
         print("--error: Model name not found!")
         return False
@@ -1400,7 +1402,7 @@ def itr_180527_170706_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirB
             data['weightNorm'] = False
             write_json_file(runName+'.json', data)
 
-def itr_180822_170706_ITR_B_incep(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, data):
+def itr_180822_170706_ITR_B_incep_lstm(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, data):
     if reCompileITR:
         runPrefix = runName+'_'
         data['modelName'] = 'twin_cnn_4p4l2f_inception_fclstm'
@@ -1408,9 +1410,9 @@ def itr_180822_170706_ITR_B_incep(reCompileITR, trainLogDirBase, testLogDirBase,
         data['imageDepthChannels'] = 5
         data['numTuple'] = 5
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
-        data['modelShape'] = [32, 64, 32, 64, 64, 128, 64, 128, 1024]
-        data['trainBatchSize'] = 16
-        data['testBatchSize'] = 16
+        data['modelShape'] = [32, 64, 32, 64, 64, 96, 64, 96, 256]
+        data['trainBatchSize'] = 12
+        data['testBatchSize'] = 12
         data['numTrainDatasetExamples'] = 20400
         data['numTestDatasetExamples'] = 2790
         data['outputSize'] = 6

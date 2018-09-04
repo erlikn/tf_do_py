@@ -29,7 +29,7 @@ import tensorflow as tf
 
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 #from tensorflow.python.client import device_lib
 #print(device_lib.list_local_devices())
@@ -212,10 +212,17 @@ def train(modelParams):
         # use mask to get degrees significant
         # What about adaptive mask to zoom into differences at each CNN stack !!!
         ########## model_cnn.loss is called in the loss function
-        #loss = weighted_loss(targetP, targetT, **modelParams)
-        
-        # all target values are predicted
-        loss = model_cnn.loss(targetP, targetT, **modelParams) # in the ntuple mode, predicting all the n-1 transformation parameters
+        #loss = weighted_loss(targetP, targetT, **modelParams)       
+        if True:#modelParams.get('lastTuple'):
+            # Training with all, loss on the last tuple only
+            print("Using all ", modelParams.get('numTuple'), " to predict (rgs) only the LAST transformation")
+            # loss on last tuple
+            loss = model_cnn.loss(targetP, targetT[:,:,modelParams['numTuple']-2:modelParams['numTuple']-1], **modelParams)
+        else:
+            # Training on all, loss on all
+            print("Using all ", modelParams.get('numTuple'), " to predict (rgs) all", modelParams.get('numTuple'), " transformations")
+            # for training on all tuples
+            loss = model_cnn.loss(targetP, targetT, **modelParams)
         
         # modelParams[imageDepthChannels]-2 cuz we have n tuples and n-1 transitions => changing index to 0 means depth-2
         #loss = model_cnn.loss(targetP, targetT[:,:,modelParams['imageDepthChannels']-2], **modelParams)

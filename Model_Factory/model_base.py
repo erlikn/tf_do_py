@@ -129,11 +129,11 @@ def twin_correlation(name, prevLayerOut, prevLayerDim, d, s2, **kwargs):
     dtype = tf.float16 if kwargs.get('usefp16') else tf.float32
 
     D = (2*d)+1
-    numParallelModules = kwargs.get('numParallelModules') # 2
-    # Input from Twin network -> numParallelModules = 2
-    # Split tensor through last dimension into numParallelModules tensors
-    prevLayerOut = tf.split(prevLayerOut, num_or_size_splits=numParallelModules, axis=3)
-    prevLayerIndivDims = prevLayerDim / numParallelModules
+    numParalModules = kwargs.get('numParallelModules') # 2
+    # Input from Twin network -> numParalModules = 2
+    # Split tensor through last dimension into numParalModules tensors
+    prevLayerOut = tf.split(prevLayerOut, num_or_size_splits=numParalModules, axis=3)
+    prevLayerIndivDims = prevLayerDim / numParalModules
 
     # f1 is a list of size batchSize,x,y of [1,1,c,1] tensors  => last 1 is for the output size
     prevLayerOut[0] = tf.split(prevLayerOut[0], num_or_size_splits=kwargs.get('activeBatchSize'), axis=0) # batches seperate
@@ -190,11 +190,11 @@ def twin_correlation(name, prevLayerOut, prevLayerDim, d, s2, **kwargs):
 def twin_correlation_simple(name, prevLayerOut, prevLayerDim, **kwargs):
     dtype = tf.float16 if kwargs.get('usefp16') else tf.float32
 
-    numParallelModules = kwargs.get('numParallelModules') # 2
-    # Input from Twin network -> numParallelModules = 2
-    # Split tensor through last dimension into numParallelModules tensors
-    prevLayerOut = tf.split(prevLayerOut, num_or_size_splits=numParallelModules, axis=3)
-    prevLayerIndivDims = prevLayerDim / numParallelModules
+    numParalModules = kwargs.get('numParallelModules') # 2
+    # Input from Twin network -> numParalModules = 2
+    # Split tensor through last dimension into numParalModules tensors
+    prevLayerOut = tf.split(prevLayerOut, num_or_size_splits=numParalModules, axis=3)
+    prevLayerIndivDims = prevLayerDim / numParalModules
 
     # f1 is a list of size batchSize,x,y of [1,1,c,1] tensors  => last 1 is for the output size
     prevLayerOut[0] = tf.split(prevLayerOut[0], num_or_size_splits=kwargs.get('activeBatchSize'), axis=0) # batches seperate
@@ -213,7 +213,7 @@ def conv_fire_parallel_residual_module(name, prevLayerOut, prevLayerDim, histori
         name:               scope name
         prevLayerOut:       output tensor of previous layer
         prevLayerDim:      size of the last (3rd) dimension in prevLayerOut
-        numParallelModules: number of parallel modules and parallel data in prevLayerOut
+        numParalModules: number of parallel modules and parallel data in prevLayerOut
         fireDimsSingleModule:     number of output dimensions for each parallel module
     """
     USE_FP_16 = kwargs.get('usefp16')
@@ -221,14 +221,14 @@ def conv_fire_parallel_residual_module(name, prevLayerOut, prevLayerDim, histori
 
     existingParams = kwargs.get('existingParams')
     
-    numParallelModules = kwargs.get('numParallelModules') # 2
-    # Twin network -> numParallelModules = 2
-    # Split tensor through last dimension into numParallelModules tensors
-    prevLayerOut = tf.split(prevLayerOut, numParallelModules, axis=3)
-    prevLayerIndivDims = prevLayerDim / numParallelModules
+    numParalModules = kwargs.get('numParallelModules') # 2
+    # Twin network -> numParalModules = 2
+    # Split tensor through last dimension into numParalModules tensors
+    prevLayerOut = tf.split(prevLayerOut, numParalModules, axis=3)
+    prevLayerIndivDims = prevLayerDim / numParalModules
 
-    historicLayerOut = tf.split(historicLayerOut, numParallelModules, axis=3)
-    historicLayerIndivDim = historicLayerDim / numParallelModules
+    historicLayerOut = tf.split(historicLayerOut, numParalModules, axis=3)
+    historicLayerIndivDim = historicLayerDim / numParalModules
 
     if (fireDimsSingleModule.get('cnn1x1')):
         cnnName = 'cnn1x1'
@@ -243,15 +243,17 @@ def conv_fire_parallel_residual_module(name, prevLayerOut, prevLayerDim, histori
         cnnName = 'cnn7x7'
         kernelSize = 7
 
+    print(name, cnnName, prevLayerDim, numParalModules, prevLayerIndivDims, fireDimsSingleModule)
+
     # output depth of the convolution should be same as historic
-    if numParallelModules*fireDimsSingleModule[cnnName] != historicLayerDim:
+    if numParalModules*fireDimsSingleModule[cnnName] != historicLayerDim:
         # TO DO
         if kwargs.get('residualPadding') == "conv":
-            for prl in range(numParallelModules):
+            for prl in range(numParalModules):
                 # convlove historic data with a kernel of 1x1 and output size of prevLayerDim
                 historicLayerOut[prl] = historicLayerOut[prl]
         if kwargs.get('residualPadding') == "zeroPad":
-            for prl in range(numParallelModules):
+            for prl in range(numParalModules):
                 # zero pad current historicLayerOut to the size of prevLayerDim
                 historicLayerOut[prl] = historicLayerOut[prl]
 
@@ -290,7 +292,7 @@ def conv_fire_parallel_residual_module(name, prevLayerOut, prevLayerDim, histori
                                          initializer=tf.constant_initializer(0.0),
                                          dtype=dtype)
 
-            for prl in range(numParallelModules):
+            for prl in range(numParalModules):
                 conv = tf.nn.conv2d(prevLayerOut[prl], kernel, [1, 1, 1, 1], padding='SAME')
 
                 if kwargs.get('weightNorm'):
@@ -307,15 +309,15 @@ def conv_fire_parallel_residual_module(name, prevLayerOut, prevLayerDim, histori
 
             #_activation_summary(convRelu)
 
-    return convRelu, numParallelModules*fireDimsSingleModule[cnnName]
+    return convRelu, numParalModules*fireDimsSingleModule[cnnName]
 
-def conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParallelModules, fireDimsSingleModule, wd=None, **kwargs):
+def conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParalModules, fireDimsSingleModule, wd=None, **kwargs):
     """
     Input Args:
         name:               scope name
         prevLayerOut:       output tensor of previous layer
         prevLayerDim:       size of the last (3rd) dimension in prevLayerOut
-        numParallelModules: number of parallel modules and parallel data in prevLayerOut
+        numParalModules: number of parallel modules and parallel data in prevLayerOut
         fireDimsSingleModule:     number of output dimensions for each parallel module
     """
     USE_FP_16 = kwargs.get('usefp16')
@@ -323,10 +325,10 @@ def conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParallelModul
 
     existingParams = kwargs.get('existingParams')
 
-    # Twin network -> numParallelModules = 2
-    # Split tensor through last dimension into numParallelModules tensors
-    prevLayerOut = tf.split(prevLayerOut, numParallelModules, axis=3)
-    prevLayerIndivDims = prevLayerDim / numParallelModules
+    # Twin network -> numParalModules = 2
+    # Split tensor through last dimension into numParalModules tensors
+    prevLayerOut = tf.split(prevLayerOut, numParalModules, axis=3)
+    prevLayerIndivDims = prevLayerDim / numParalModules
 
     if (fireDimsSingleModule.get('cnn1x1')):
         cnnName = 'cnn1x1'
@@ -340,6 +342,8 @@ def conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParallelModul
     if (fireDimsSingleModule.get('cnn7x7')):
         cnnName = 'cnn7x7'
         kernelSize = 7
+
+    print(name, cnnName, prevLayerDim, numParalModules, prevLayerIndivDims, fireDimsSingleModule)
 
     with tf.variable_scope(name):
         with tf.variable_scope(cnnName) as scope:
@@ -375,7 +379,7 @@ def conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParallelModul
                                          initializer=tf.constant_initializer(0.0),
                                          dtype=dtype)
 
-            for prl in range(numParallelModules):
+            for prl in range(numParalModules):
                 conv = tf.nn.conv2d(prevLayerOut[prl], kernel, [1, 1, 1, 1], padding='SAME')
 
                 if kwargs.get('weightNorm'):
@@ -392,25 +396,25 @@ def conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParallelModul
 
             #_activation_summary(convRelu)
 
-    return convRelu, numParallelModules*fireDimsSingleModule[cnnName]
+    return convRelu, numParalModules*fireDimsSingleModule[cnnName]
 
-def conv_fire_parallel_inception_module(name, prevLayerOut, prevLayerDim, numParallelModules, fireDimsSingleModule, wd=None, **kwargs):
+def conv_fire_parallel_inception_module(name, prevLayerOut, prevLayerDim, numParalModules, fireDimsSingleModule, wd=None, **kwargs):
     """
     Input Args:
         name:               scope name
         prevLayerOut:       output tensor of previous layer
         prevLayerDim:       size of the last (3rd) dimension in prevLayerOut
-        numParallelModules: number of parallel modules and parallel data in prevLayerOut
+        numParalModules: number of parallel modules and parallel data in prevLayerOut
         fireDimsSingleModule:     number of output dimensions for each parallel module
     """
     if (fireDimsSingleModule.get('cnn1x1')):
-        fireOut_1x1, prevExpandDim_1x1 = conv_fire_parallel_module(name, prevLayerOut, numParallelModules,  prevLayerDim, {'cnn1x1': fireDimsSingleModule.get('cnn1x1')}, wd, **kwargs)
+        fireOut_1x1, prevExpandDim_1x1 = conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParalModules, {'cnn1x1': fireDimsSingleModule.get('cnn1x1')}, wd, **kwargs)
     if (fireDimsSingleModule.get('cnn3x3')):
-        fireOut_3x3, prevExpandDim_3x3 = conv_fire_parallel_module(name, prevLayerOut, numParallelModules,  prevLayerDim, {'cnn3x3': fireDimsSingleModule.get('cnn3x3')}, wd, **kwargs)
+        fireOut_3x3, prevExpandDim_3x3 = conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParalModules, {'cnn3x3': fireDimsSingleModule.get('cnn3x3')}, wd, **kwargs)
     if (fireDimsSingleModule.get('cnn5x5')):
-        fireOut_5x5, prevExpandDim_5x5 = conv_fire_parallel_module(name, prevLayerOut, numParallelModules,  prevLayerDim, {'cnn5x5': fireDimsSingleModule.get('cnn5x5')}, wd, **kwargs)
+        fireOut_5x5, prevExpandDim_5x5 = conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParalModules, {'cnn5x5': fireDimsSingleModule.get('cnn5x5')}, wd, **kwargs)
     if (fireDimsSingleModule.get('cnn7x7')):
-        fireOut_7x7, prevExpandDim_7x7 = conv_fire_parallel_module(name, prevLayerOut, numParallelModules,  prevLayerDim, {'cnn7x7': fireDimsSingleModule.get('cnn7x7')}, wd, **kwargs)
+        fireOut_7x7, prevExpandDim_7x7 = conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParalModules, {'cnn7x7': fireDimsSingleModule.get('cnn7x7')}, wd, **kwargs)
     
     if (fireDimsSingleModule.get('cnn1x1')) and (fireDimsSingleModule.get('cnn3x3')) and (fireDimsSingleModule.get('cnn5x5')):
         fireOut = tf.concat([fireOut_1x1, fireOut_3x3, fireOut_5x5], axis=3)
@@ -449,6 +453,8 @@ def conv_fire_residual_module(name, prevLayerOut, prevLayerDim, historicLayerOut
     if (fireDims.get('cnn7x7')):
         cnnName = 'cnn7x7'
         kernelSize = 7
+
+    print(name, cnnName, prevLayerDim, historicLayerDim, fireDims)
 
     with tf.variable_scope(name):
         with tf.variable_scope(cnnName) as scope:
@@ -504,6 +510,8 @@ def conv_fire_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwar
     if (fireDims.get('cnn7x7')):
         cnnName = 'cnn7x7'
         kernelSize = 7
+
+    print(name, cnnName, prevLayerDim, fireDims)
 
     with tf.variable_scope(name):
         with tf.variable_scope(cnnName) as scope:
@@ -573,6 +581,8 @@ def fc_fire_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwargs
     USE_FP_16 = kwargs.get('usefp16')
     dtype = tf.float16 if USE_FP_16 else tf.float32
 
+    print(name, prevLayerDim)
+
     existingParams = kwargs.get('existingParams')
 
     with tf.variable_scope(name):
@@ -607,13 +617,15 @@ def fc_fire_LSTM_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **k
     dtype = tf.float16 if USE_FP_16 else tf.float32
     existingParams = kwargs.get('existingParams')
 
+    print(name, prevLayerDim, fireDims)
+
     with tf.variable_scope(name):
         with tf.variable_scope('fclstm') as scope:
             #defining the network withd 'fireDims' hidden states
             lstmLayer = tf.contrib.rnn.BasicLSTMCell(fireDims['fclstm'], forget_bias=1)
             # 'outputs' is a tensor of shape [batchSize, numTimes, fireDims]
             # 'state' is a tensor of shape [batchSize, fireDims] !might be used to initiate the next lstm layer state! 
-            outputs, state = rnn.dynamic_rnn(lstmLayer, prevLayerOut, dtype="float32")
+            outputs, state = tf.nn.dynamic_rnn(lstmLayer, prevLayerOut, time_major=False, dtype="float32")
         # from 'outputs' return the last output of unrolled lstm -> [batchSize, fireDims]
         return outputs[:,-1,:], fireDims['fclstm']
 
@@ -622,6 +634,8 @@ def fc_regression_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **
     dtype = tf.float16 if USE_FP_16 else tf.float32
 
     existingParams = kwargs.get('existingParams')
+
+    print(name, prevLayerDim, fireDims)
 
     with tf.variable_scope(name):
         with tf.variable_scope('fc') as scope:
