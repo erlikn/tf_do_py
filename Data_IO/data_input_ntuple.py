@@ -176,7 +176,10 @@ def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
         sampleData = []
         for _ in range(numPreprocessThreads):
             # Parse a serialized Example proto to extract the image and metadata.
-            images, pcl, target, tfrecFileIDs = tfrecord_io.parse_example_proto_ntuple_depthPCL(exampleSerialized, **kwargs)
+            #   depth image
+            #images, pcl, target, tfrecFileIDs = tfrecord_io.parse_example_proto_ntuple_depthPCL(exampleSerialized, **kwargs)
+            #   color image
+            images, pcl, target, tfrecFileIDs = tfrecord_io.parse_example_proto_ntuple_color(exampleSerialized, **kwargs)
             sampleData.append([images, pcl, target, tfrecFileIDs])
         
         batchImages, batchPcl, batchTarget, batchTFrecFileIDs = tf.train.batch_join(sampleData,
@@ -186,8 +189,11 @@ def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
 
         batchImages = tf.cast(batchImages, tf.float32)
         # Display the training images in the visualizer.
-        images = tf.split(batchImages, kwargs.get('imageDepthChannels'), axis=3)
-        for i in range(kwargs.get('imageDepthChannels')):
+        numTuple = kwargs.get('numTuple')
+
+        images = tf.split(batchImages, numTuple, axis=3)
+        
+        for i in range(numTuple):
             tf.summary.image('images_'+str(i)+'_', images[i])
         
         return batchImages, batchPcl, batchTarget, batchTFrecFileIDs

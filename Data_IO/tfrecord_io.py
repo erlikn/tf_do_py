@@ -364,6 +364,27 @@ def parse_example_proto_ntuple_depthPCL(exampleSerialized, **kwargs):
     # However, they will be kept to unify matrix col size for valid tensor operations 
     return images, pcl, target, fileID
 
+def parse_example_proto_ntuple_color(exampleSerialized, **kwargs):
+    numTuples = kwargs.get('numTuple')
+    featureMap = {
+        'fileID': tf.FixedLenFeature([3], dtype=tf.int64),
+        'imagesColor': tf.FixedLenFeature([], dtype=tf.string),
+        'pcl': tf.FixedLenFeature([kwargs.get('pclRows')*kwargs.get('pclCols')*numTuples], dtype=tf.float32),
+        'target': tf.FixedLenFeature([(numTuples-1) * kwargs.get('logicalOutputSize')], dtype=tf.float32)
+        }
+    features = tf.parse_single_example(exampleSerialized, featureMap)
+    fileID = features['fileID']
+    # (rows_ x cols_ x (3xn))
+    imagesColor = _decode_byte_image(features['imagesColor'],
+                                kwargs.get('imageColorRows'),
+                                kwargs.get('imageColorCols'),
+                                kwargs.get('imageColorChannels'))
+    pcl = _get_pcl_ntuple(features['pcl'], kwargs.get('pclRows'), kwargs.get('pclCols'), numTuples)
+    target = _get_target_ntuple(features['target'], kwargs.get('logicalOutputSize'), numTuples-1)
+    # PCLs will hold padded [0, 0, 0, 0] points at the end that will be ignored during usage
+    # However, they will be kept to unify matrix col size for valid tensor operations 
+    return imagesColor, pcl, target, fileID
+
 
 def parse_example_proto_ntuple_prevPred(exampleSerialized, **kwargs):
     """

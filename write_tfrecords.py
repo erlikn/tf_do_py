@@ -105,7 +105,7 @@ def train(modelParams):
 
         # Build a Graph that trains the model with one batch of examples and
         # updates the model parameters.
-        opTrain = model_cnn.train(loss, globalStep, **modelParams)
+#        opTrain = model_cnn.train(loss, globalStep, **modelParams)
         ##############################
         print('Training     ready')
         # Create a saver.
@@ -116,7 +116,6 @@ def train(modelParams):
         #init = tf.initialize_all_variables()
         init = tf.global_variables_initializer()
 
-        opCheck = tf.add_check_numerics_ops()
         # Start running operations on the Graph.
         config = tf.ConfigProto(log_device_placement=modelParams['logDevicePlacement'])
         config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1

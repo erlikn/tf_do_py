@@ -183,6 +183,12 @@ def write_iterative(runName, itrNum, dataLocal):
         itr_180527_170706_ITR_B_inception(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, dataLocal)
     elif runName == '180822_lstm': # using 170706_ITR_B but with loss for all n-1 tuples
         itr_180822_170706_ITR_B_incep_lstm(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, dataLocal)
+    elif runName == '180910_lstm': # using 170706_ITR_B but with loss for all n-1 tuples
+        itr_180910_lstm(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, dataLocal)
+    elif runName == '180912_gru': # using 170706_ITR_B but with loss for all n-1 tuples
+        itr_180912_gru(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, dataLocal)
+    elif runName == '180913_gru': # using 170706_ITR_B but with loss for all n-1 tuples
+        itr_180913_gru(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, dataLocal)
     else:
         print("--error: Model name not found!")
         return False
@@ -1410,7 +1416,7 @@ def itr_180822_170706_ITR_B_incep_lstm(reCompileITR, trainLogDirBase, testLogDir
         data['imageDepthChannels'] = 5
         data['numTuple'] = 5
         data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
-        data['modelShape'] = [32, 64, 32, 64, 64, 96, 64, 96, 256]
+        data['modelShape'] = [32, 64, 32, 96, 64, 96, 96, 128, 256]
         data['trainBatchSize'] = 12
         data['testBatchSize'] = 12
         data['numTrainDatasetExamples'] = 20400
@@ -1456,8 +1462,46 @@ def itr_180822_170706_ITR_B_incep_lstm(reCompileITR, trainLogDirBase, testLogDir
             data['batchNorm'] = True
             data['weightNorm'] = False
             write_json_file(runName+'.json', data)
-        ### ITERATION 3
-        if itrNum == 3:
+def itr_180910_lstm(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, data):
+    if reCompileITR:
+        runPrefix = runName+'_'
+        data['modelName'] = 'tup_4p4l2f_gru_fc'
+        data['numParallelModules'] = 5
+        data['imageDepthChannels'] = 5
+        data['numTuple'] = 5
+        data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
+        data['modelShape'] = [48, 80, 48, 80,     64, 96, 64, 96, 
+                              80, 112, 80, 112,   96, 128, 96, 128, 
+                              256]
+        data['trainBatchSize'] = 12
+        data['testBatchSize'] = 12
+        data['numTrainDatasetExamples'] = 20400
+        data['numTestDatasetExamples'] = 2790
+        data['outputSize'] = 6
+        data['logicalOutputSize'] = 6
+        data['lossFunction'] = "Weighted_Params_L2_loss_nTuple" #Weighted_L2_loss
+        
+        ### ITERATION 1
+        if itrNum == 1:
+            runName = runPrefix+str(itrNum)
+            data['trainDataDir'] = '../Data/kitti/train_64h_reg_5_tpl_6_prm'
+            data['testDataDir'] = '../Data/kitti/test_64h_reg_5_tpl_6_prm'
+            data['trainLogDir'] = trainLogDirBase + runName
+            data['testLogDir'] = testLogDirBase + runName
+            data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+            data['warpedTestDataDir'] = warpedTestDirBase+ runName
+            _set_folders(data['warpedTrainDataDir'])
+            _set_folders(data['warpedTestDataDir'])
+            data['tMatTrainDir'] = data['trainLogDir']+'/target'
+            data['tMatTestDir'] = data['testLogDir']+'/target'
+            _set_folders(data['tMatTrainDir'])
+            _set_folders(data['tMatTestDir'])
+            data['warpOriginalImage'] = True
+            data['batchNorm'] = True
+            data['weightNorm'] = False
+            write_json_file(runName+'.json', data)
+        ### ITERATION 2
+        if itrNum == 2:
             runName = runPrefix+str(itrNum)
             data['trainDataDir'] = data['warpedTrainDataDir']+runPrefix+str(itrNum-1) # from previous iteration
             data['testDataDir'] = data['warpedTestDataDir']+runPrefix+str(itrNum-1) # from previous iteration
@@ -1474,8 +1518,120 @@ def itr_180822_170706_ITR_B_incep_lstm(reCompileITR, trainLogDirBase, testLogDir
             data['batchNorm'] = True
             data['weightNorm'] = False
             write_json_file(runName+'.json', data)
-        ### ITERATION 4
-        if itrNum == 4:
+def itr_180912_gru(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, data):
+    if reCompileITR:
+        runPrefix = runName+'_'
+        data['modelName'] = 'tup_4p4l2f_gru_fc_color'
+        
+        data['numTuple'] = 5
+
+        data['numParallelModules'] = data['numTuple']
+        data['imageDepthChannels'] = 1*data['numTuple']
+        
+        data['imageColorRows'] = 185
+        data['imageColorCols'] = 613
+        data['imageColorChannels'] = 3*data['numTuple']
+
+        data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
+        data['modelShape'] = [32, 32, 32, 32,     48, 48, 48, 48, 
+                              64, 64, 64, 64,   80, 80, 0, 0, 
+                              180]
+        data['trainBatchSize'] = 8
+        data['testBatchSize']  = 8
+        data['numTrainDatasetExamples'] = 20400
+        data['numTestDatasetExamples'] = 2790
+        data['outputSize'] = 6
+        data['logicalOutputSize'] = 6
+        data['lossFunction'] = "Weighted_Params_L2_loss_nTuple" #Weighted_L2_loss
+        
+        ### ITERATION 1
+        if itrNum == 1:
+            runName = runPrefix+str(itrNum)
+            data['trainDataDir'] = '../Data/kitti/train_64h_reg_5_tpl_6_prm'
+            data['testDataDir'] = '../Data/kitti/test_64h_reg_5_tpl_6_prm'
+            data['trainLogDir'] = trainLogDirBase + runName
+            data['testLogDir'] = testLogDirBase + runName
+            data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+            data['warpedTestDataDir'] = warpedTestDirBase+ runName
+            _set_folders(data['warpedTrainDataDir'])
+            _set_folders(data['warpedTestDataDir'])
+            data['tMatTrainDir'] = data['trainLogDir']+'/target'
+            data['tMatTestDir'] = data['testLogDir']+'/target'
+            _set_folders(data['tMatTrainDir'])
+            _set_folders(data['tMatTestDir'])
+            data['warpOriginalImage'] = True
+            data['batchNorm'] = True
+            data['weightNorm'] = False
+            write_json_file(runName+'.json', data)
+        ### ITERATION 2
+        if itrNum == 2:
+            runName = runPrefix+str(itrNum)
+            data['trainDataDir'] = data['warpedTrainDataDir']+runPrefix+str(itrNum-1) # from previous iteration
+            data['testDataDir'] = data['warpedTestDataDir']+runPrefix+str(itrNum-1) # from previous iteration
+            data['trainLogDir'] = trainLogDirBase + runName
+            data['testLogDir'] = testLogDirBase + runName
+            data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+            data['warpedTestDataDir'] = warpedTestDirBase+ runName
+            _set_folders(data['warpedTrainDataDir'])
+            _set_folders(data['warpedTestDataDir'])
+            data['tMatTrainDir'] = data['trainLogDir']+'/target'
+            data['tMatTestDir'] = data['testLogDir']+'/target'
+            _set_folders(data['tMatTrainDir'])
+            _set_folders(data['tMatTestDir'])
+            data['batchNorm'] = True
+            data['weightNorm'] = False
+            write_json_file(runName+'.json', data)
+
+def itr_180913_gru(reCompileITR, trainLogDirBase, testLogDirBase, runName, itrNum, data):
+    if reCompileITR:
+        runPrefix = runName+'_'
+        data['modelName'] = 'tup_4p4l2f_gru_convfc_color'
+        
+        data['numTuple'] = 5
+
+        data['numParallelModules'] = data['numTuple']
+        data['imageDepthChannels'] = 1*data['numTuple']
+        
+        data['imageColorRows'] = 185
+        data['imageColorCols'] = 613
+        data['imageColorChannels'] = 3*data['numTuple']
+
+        data['optimizer'] = 'MomentumOptimizer' # AdamOptimizer MomentumOptimizer GradientDescentOptimizer
+        #data['modelShape'] = [64, 64, 64, 64,       80, 80, 80, 80, 
+        #                      96, 96, 96, 96,       128, 128, 128, 128, 
+        #                      128]
+        data['modelShape'] = [32, 0, 0, 32,     0, 48, 0, 48, 
+                              0, 64, 0, 64,     0, 80, 80, 80, 
+                              180]
+        data['trainBatchSize'] = 8
+        data['testBatchSize']  = 8
+        data['numTrainDatasetExamples'] = 20400
+        data['numTestDatasetExamples'] = 2790
+        data['outputSize'] = 6
+        data['logicalOutputSize'] = 6
+        data['lossFunction'] = "Weighted_Params_L2_loss_nTuple" #Weighted_L2_loss
+        
+        ### ITERATION 1
+        if itrNum == 1:
+            runName = runPrefix+str(itrNum)
+            data['trainDataDir'] = '../Data/kitti/train_64h_reg_5_tpl_6_prm'
+            data['testDataDir'] = '../Data/kitti/test_64h_reg_5_tpl_6_prm'
+            data['trainLogDir'] = trainLogDirBase + runName
+            data['testLogDir'] = testLogDirBase + runName
+            data['warpedTrainDataDir'] = warpedTrainDirBase + runName
+            data['warpedTestDataDir'] = warpedTestDirBase+ runName
+            _set_folders(data['warpedTrainDataDir'])
+            _set_folders(data['warpedTestDataDir'])
+            data['tMatTrainDir'] = data['trainLogDir']+'/target'
+            data['tMatTestDir'] = data['testLogDir']+'/target'
+            _set_folders(data['tMatTrainDir'])
+            _set_folders(data['tMatTestDir'])
+            data['warpOriginalImage'] = True
+            data['batchNorm'] = True
+            data['weightNorm'] = False
+            write_json_file(runName+'.json', data)
+        ### ITERATION 2
+        if itrNum == 2:
             runName = runPrefix+str(itrNum)
             data['trainDataDir'] = data['warpedTrainDataDir']+runPrefix+str(itrNum-1) # from previous iteration
             data['testDataDir'] = data['warpedTestDataDir']+runPrefix+str(itrNum-1) # from previous iteration

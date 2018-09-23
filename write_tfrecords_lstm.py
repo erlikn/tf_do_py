@@ -232,11 +232,6 @@ def train(modelParams):
         # pcl based loss
         #loss = pcl_params_loss(pclA, targetP, targetT, **modelParams)
 
-        # Build a Graph that trains the model with one batch of examples and
-        # updates the model parameters.
-        opTrain = model_cnn.train(loss, globalStep, **modelParams)
-        ##############################
-        print('Training     ready')
         # Create a saver.
         saver = tf.train.Saver(tf.global_variables())
         print('Saver        ready')
@@ -263,8 +258,10 @@ def train(modelParams):
 
 
         # restore a saver.
-        #saver.restore(sess, (modelParams['trainLogDir'])+'/model.ckpt-250000')
-        #print('Ex-Model     loaded')
+
+        saver.restore(sess, (modelParams['trainLogDir']+'/model.ckpt-'+str(modelParams['trainMaxSteps']-1)))
+        print('     loading -> ', modelParams['trainLogDir']+'/model.ckpt-'+str(modelParams['trainMaxSteps']-1))
+        print('Ex-Model     loaded')
 
         # Start the queue runners.
         tf.train.start_queue_runners(sess=sess)
@@ -273,74 +270,51 @@ def train(modelParams):
         summaryWriter = tf.summary.FileWriter(modelParams['trainLogDir'], sess.graph)
         
         print('Training     started')
+        ######### USE LATEST STATE TO WARP IMAGES
+        filesDictionaryAccum = {}
         durationSum = 0
         durationSumAll = 0
-        for step in xrange(modelParams['maxSteps']):
-            startTime = time.time()
-            _, lossValue = sess.run([opTrain, loss])
-            duration = time.time() - startTime
-            durationSum += duration
-            assert not np.isnan(lossValue), 'Model diverged with loss = NaN'
-
-            if step % FLAGS.printOutStep == 0:
-                numExamplesPerStep = modelParams['activeBatchSize']
-                examplesPerSec = numExamplesPerStep / duration
-                secPerBatch = float(duration)
-                format_str = ('%s: step %d, loss = %.2f (%.1f examples/sec; %.3f '
-                              'sec/batch), loss/batch = %.2f')
-                logging.info(format_str % (datetime.now(), step, lossValue,
-                                           examplesPerSec, secPerBatch, lossValue/modelParams['activeBatchSize']))
-
-            if step % FLAGS.summaryWriteStep == 0:
-                summaryStr = sess.run(summaryOp)
-                summaryWriter.add_summary(summaryStr, step)
-
-            # Save the model checkpoint periodically.
-            if step % FLAGS.modelCheckpointStep == 0 or (step + 1) == modelParams['maxSteps']:
-                checkpointPath = os.path.join(modelParams['trainLogDir'], 'model.ckpt')
-                saver.save(sess, checkpointPath, global_step=step)
-
-            # Print Progress Info
-            if ((step % FLAGS.ProgressStepReportStep) == 0) or ((step+1) == modelParams['maxSteps']):
-                print('Progress: %.2f%%, Elapsed: %.2f mins, Training Completion in: %.2f mins --- %s' %
-                        (
-                            (100*step)/modelParams['maxSteps'],
-                            durationSum/60,
-                            (((durationSum*modelParams['maxSteps'])/(step+1))/60)-(durationSum/60),
-                            datetime.now()
+        if modelParams['writeWarpedImages']:
+            outputDIR = modelParams['warpedOutputFolder']+'/'
+            print("Using final training state to output processed tfrecords\noutput folder: ", outputDIR)
+            if tf.gfile.Exists(outputDIR):
+                tf.gfile.DeleteRecursively(outputDIR)
+            tf.gfile.MakeDirs(outputDIR)
+            
+            lossValueSum = 0
+            stepsForOneDataRound = int((modelParams['numExamples']/modelParams['activeBatchSize']))+1
+            print('Warping %d images with batch size %d in %d steps' % (modelParams['numExamples'], modelParams['activeBatchSize'], stepsForOneDataRound))
+            for step in xrange(stepsForOneDataRound):
+                startTime = time.time()
+                evImages, evPcl, evtargetT, evtargetP, evtfrecFileIDs, evlossValue = sess.run([images, pclA, targetT, targetP, tfrecFileIDs, loss])
+                for fileIdx in range(modelParams['activeBatchSize']):
+                    fileIDname = str(evtfrecFileIDs[fileIdx][0]) + "_" + str(evtfrecFileIDs[fileIdx][1]) + "_" + str(evtfrecFileIDs[fileIdx][2])
+                    if (fileIDname in filesDictionaryAccum):
+                        filesDictionaryAccum[fileIDname]+=1
+                    else:
+                        filesDictionaryAccum[fileIDname]=1
+                #### put imageA, warpped imageB by pHAB, HAB-pHAB as new HAB, changed fileaddress tfrecFileIDs
+                data_output.output(evImages, evPcl, evtargetT, evtargetP, evtfrecFileIDs, **modelParams)
+                duration = time.time() - startTime
+                durationSum += duration
+                durationSumAll += duration
+                # Print Progress Info
+                if ((step % FLAGS.ProgressStepReportStep) == 0) or ((step+1) == stepsForOneDataRound):
+                    print('Number of files used in training', len(filesDictionaryAccum))
+                    print('Progress: %.2f%%, Loss: %.2f, Elapsed: %.2f mins, Training Completion in: %.2f mins --- %s' % 
+                            (
+                                (100*step)/stepsForOneDataRound,
+                                evlossValue/(step+1), durationSum/60,
+                                (((durationSum*stepsForOneDataRound)/(step+1))/60)-(durationSum/60),
+                                datetime.now()
+                            )
                         )
-                    )
-                
-        ######### USE LATEST STATE TO WARP IMAGES
-        ### outputDIR = modelParams['warpedOutputFolder']+'/'
-        ### outputDirFileNum = len([name for name in os.listdir(outputDIR) if os.path.isfile(os.path.join(outputDIR, name))])
-### 
-### 
-        ### durationSum = 0
-        ### durationSumAll = 0
-        ### if modelParams['writeWarpedImages']:
-        ###     lossValueSum = 0
-        ###     stepsForOneDataRound = int((modelParams['numExamples']/modelParams['activeBatchSize']))
-        ###     print('Warping %d images with batch size %d in %d steps' % (modelParams['numExamples'], modelParams['activeBatchSize'], stepsForOneDataRound))
-        ###     #for step in xrange(stepsForOneDataRound):
-        ###     step = 0
-        ###     while outputDirFileNum != 20400:
-        ###         startTime = time.time()
-        ###         evImages, evPclA, evPclB, evtargetT, evtargetP, evtfrecFileIDs, evlossValue = sess.run([images, pclA, pclB, targetT, targetP, tfrecFileIDs, loss])
-        ###         #### put imageA, warpped imageB by pHAB, HAB-pHAB as new HAB, changed fileaddress tfrecFileIDs
-        ###         data_output.output(evImages, evPclA, evPclB, evtargetT, evtargetP, evtfrecFileIDs, **modelParams)
-        ###         duration = time.time() - startTime
-        ###         durationSum += duration
-        ###         durationSumAll += duration
-        ###         # Print Progress Info
-        ###         if ((step % FLAGS.ProgressStepReportOutputWrite) == 0) or ((step+1) == stepsForOneDataRound):
-        ###             print('Progress: %.2f%%, Loss: %.2f, Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
-        ###                     ((100*step)/stepsForOneDataRound, evlossValue/(step+1), durationSum/60, (((durationSum*stepsForOneDataRound)/(step+1))/60)-(durationSum/60)))
-        ###             #print('Total Elapsed: %.2f mins, Training Completion in: %.2f mins' % 
-        ###             #        durationSumAll/60, (((durationSumAll*stepsForOneDataRound)/(step+1))/60)-(durationSumAll/60))
-        ###         outputDirFileNum = len([name for name in os.listdir(outputDIR) if os.path.isfile(os.path.join(outputDIR, name))])
-        ###         step+=1
-        ###     print('Average training loss = %.2f - Average time per sample= %.2f s, Steps = %d' % (evlossValue/modelParams['activeBatchSize'], durationSum/(step*modelParams['activeBatchSize']), step))
+                    #print('Total Elapsed: %.2f mins, Total Completion in: %.2f mins' % (durationSumAll/60), ((((durationSumAll*stepsForOneDataRound)/(step+1))/60)-(durationSumAll/60)) )
+            print('Number of files used in training', len(filesDictionaryAccum))
+            filesAccum = np.array(list(filesDictionaryAccum.values()))
+            print('Access statistics for each file, mean max min std', np.mean(filesAccum), np.max(filesAccum), np.min(filesAccum), np.std(filesAccum))
+            print('Average training loss = %.2f - Average time per sample= %.2f s, Steps = %d' % (evlossValue/modelParams['activeBatchSize'], durationSum/(step*modelParams['activeBatchSize']), step))
+
 
 
 def _setupLogging(logPath):

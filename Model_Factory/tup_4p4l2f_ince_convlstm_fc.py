@@ -155,16 +155,19 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
     # reshape = [B, nt-1, r*c*d]
     ### RNN ---> time_major = False
     fireOut = tf.transpose(tf.stack(tf.split(fireOut, numSeqModules, 3), 0), perm=[1,0,2,3,4])
-    fireOut = tf.reshape(fireOut, [batchSize, numSeqModules, -1])
+    #fireOut = tf.reshape(fireOut, [batchSize, numSeqModules, -1])
     ### RNN ---> time_major = true
     #fireOut = tf.stack(tf.split(fireOut, numSeqModules, 3), 0)
     #fireOut = tf.reshape(fireOut, [numSeqModules, batchSize, -1])
     print('+++++ de_seq', fireOut.get_shape())
-    prevExpandDim = int(fireOut.get_shape()[2])
+    prevExpandDim = int(fireOut.get_shape()[4])
     ############# FC1-LSTM layer with 1024 hidden celss
-    fireOut, prevExpandDim = model_base.fc_fire_LSTM_module('fclstm1', fireOut, prevExpandDim,
-                                                       {'fclstm': modelShape[8]},
+    fireOut, prevExpandDim = model_base.conv_fire_LSTM_module('convlstm1', fireOut, prevExpandDim,
+                                                       {'convlstm': modelShape[8]},
                                                        wd, **kwargs)
+    # Prep for fc
+    fireOut = tf.reshape(fireOut, [batchSize, -1])
+ 
     # calc batch norm FC1
     if kwargs.get('batchNorm'):
         fireOut = model_base.batch_norm('batch_norm', fireOut, dtype)

@@ -55,9 +55,9 @@ def output(batchImages, batchPcl, bTargetT, targetP, batchTFrecFileIDs, **kwargs
       ValueError: If no dataDir
     """
     num_cores = multiprocessing.cpu_count() - 2
-    Parallel(n_jobs=num_cores)(delayed(output_loop)(batchImages, batchPcl, bTargetT, targetP, batchTFrecFileIDs, i, **kwargs) for i in range(kwargs.get('activeBatchSize')))
-    #for i in range(kwargs.get('activeBatchSize')):
-    #    output_loop(batchImages, batchPcl, bTargetT, targetP, batchTFrecFileIDs, i, **kwargs)
+    #Parallel(n_jobs=num_cores)(delayed(output_loop)(batchImages, batchPcl, bTargetT, targetP, batchTFrecFileIDs, i, **kwargs) for i in range(kwargs.get('activeBatchSize')))
+    for i in range(kwargs.get('activeBatchSize')):
+        output_loop(batchImages, batchPcl, bTargetT, targetP, batchTFrecFileIDs, i, **kwargs)
     return
 
 def output_loop(batchImages, batchPcl, bTargetT, targetP, batchTFrecFileIDs, i, **kwargs):
@@ -71,25 +71,24 @@ def output_loop(batchImages, batchPcl, bTargetT, targetP, batchTFrecFileIDs, i, 
     Raises:
       ValueError: If no dataDir
     """
-    numTuples = kwargs.get('imageDepthChannels')
-    # split for depth dimension
-    pclBTransformed, targetRes, depthBTransformed = _apply_prediction(batchPcl[i,:,:,numTuples-1], bTargetT[i,:,numTuples-2], targetP[i], **kwargs)
-    outBatchPcl = batchPcl.copy()
-    outBatchImages = batchImages.copy()
-    outTargetT = bTargetT.copy()
-    outBatchPcl[i,:,:,numTuples-1] = pclBTransformed
-    outBatchImages[i,:,:,numTuples-1] = depthBTransformed
-    outTargetT[i,:,numTuples-2] = targetRes
-    # Write each Tensorflow record
-    filename = str(batchTFrecFileIDs[i][0]+100) + "_" + str(batchTFrecFileIDs[i][1]+100000) + "_" + str(batchTFrecFileIDs[i][2]+100000)
-    tfrecord_io.tfrec_write_nt_pcl_dep(batchTFrecFileIDs[i],
-                                       outBatchPcl[i],
-                                       outBatchImages[i],
-                                       outTargetT[i],
-                                       kwargs.get('warpedOutputFolder')+'/',
-                                       numTuples,
-                                       filename)
-
+    #numTuples = kwargs.get('imageDepthChannels')
+    ## split for depth dimension
+    #pclBTransformed, targetRes, depthBTransformed = _apply_prediction(batchPcl[i,:,:,numTuples-1], bTargetT[i,:,numTuples-2], targetP[i], **kwargs)
+    #outBatchPcl = batchPcl.copy()
+    #outBatchImages = batchImages.copy()
+    #outTargetT = bTargetT.copy()
+    #outBatchPcl[i,:,:,numTuples-1] = pclBTransformed
+    #outBatchImages[i,:,:,numTuples-1] = depthBTransformed
+    #outTargetT[i,:,numTuples-2] = targetRes
+    ## Write each Tensorflow record
+    #filename = str(batchTFrecFileIDs[i][0]+100) + "_" + str(batchTFrecFileIDs[i][1]+100000) + "_" + str(batchTFrecFileIDs[i][2]+100000)
+    #tfrecord_io.tfrec_write_nt_pcl_dep(batchTFrecFileIDs[i],
+    #                                   outBatchPcl[i],
+    #                                   outBatchImages[i],
+    #                                   outTargetT[i],
+    #                                   kwargs.get('warpedOutputFolder')+'/',
+    #                                   numTuples,
+    #                                   filename)
     if kwargs.get('phase') == 'train':
         folderTmat = kwargs.get('tMatTrainDir')
     else:
