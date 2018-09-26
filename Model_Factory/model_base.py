@@ -110,19 +110,22 @@ def _variable_with_weight_decay(name, shape, initializer, dtype, wd, trainable=T
 
 
 
-def batch_norm(name, tensorConv, dtype):
-    with tf.variable_scope(name):
-        # Calc batch mean for parallel module
-        batchMean, batchVar = tf.nn.moments(tensorConv, axes=[0]) # moments along x,y
-        scale = tf.Variable(tf.ones(tensorConv.get_shape()[-1]))
-        beta = tf.Variable(tf.zeros(tensorConv.get_shape()[-1]))
-        epsilon = 1e-3
-        if dtype is tf.float16:
-            scale = tf.cast(scale, tf.float16)
-            beta = tf.cast(beta, tf.float16)
-            epsilon = tf.cast(epsilon, tf.float16)
-        batchNorm = tf.nn.batch_normalization(tensorConv, batchMean, batchVar, beta, scale, epsilon)
-    return batchNorm
+def batch_norm(name, tensorConv, dtype, phase):
+    if phase == 'train':
+        print(name)
+        with tf.variable_scope(name):
+            # Calc batch mean for parallel module
+            #batchMean, batchVar = tf.nn.moments(tensorConv, axes=[0]) # moments along x,y
+            #scale = tf.Variable(tf.ones(tensorConv.get_shape()[-1]))
+            #beta = tf.Variable(tf.zeros(tensorConv.get_shape()[-1]))
+            #epsilon = 1e-3
+            #if dtype is tf.float16:
+            #    scale = tf.cast(scale, tf.float16)
+            #    beta = tf.cast(beta, tf.float16)
+            #    epsilon = tf.cast(epsilon, tf.float16)
+            #tensorConv = tf.nn.batch_normalization(tensorConv, batchMean, batchVar, beta, scale, epsilon)
+            tensorConv = tf.contrib.layers.batch_norm(tensorConv, is_training=True, updates_collections=None)
+    return tensorConv
     
 
 def twin_correlation(name, prevLayerOut, prevLayerDim, d, s2, **kwargs):
@@ -243,7 +246,7 @@ def conv_fire_parallel_residual_module(name, prevLayerOut, prevLayerDim, histori
         cnnName = 'cnn7x7'
         kernelSize = 7
 
-    print(name, cnnName, prevLayerDim, numParalModules, prevLayerIndivDims, fireDimsSingleModule, prevLayerOut[0].get_shape())
+    print(name, cnnName, prevLayerDim, numParalModules, prevLayerIndivDims, fireDimsSingleModule)
 
     # output depth of the convolution should be same as historic
     if numParalModules*fireDimsSingleModule[cnnName] != historicLayerDim:
@@ -310,8 +313,9 @@ def conv_fire_parallel_residual_module(name, prevLayerOut, prevLayerDim, histori
             #_activation_summary(convRelu)
 
     return convRelu, numParalModules*fireDimsSingleModule[cnnName]
-
-def conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParalModules, fireDimsSingleModule, wd=None, **kwargs):
+   
+def conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParalModules, fireDimsSingleModule, 
+                              wd=None, stride=[1, 1, 1, 1], padding='SAME', **kwargs):
     """
     Input Args:
         name:               scope name
@@ -330,11 +334,10 @@ def conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParalModules,
     prevLayerOut = tf.split(prevLayerOut, numParalModules, axis=3)
     prevLayerIndivDims = prevLayerDim / numParalModules
 
-    padding = 'SAME'
     if (fireDimsSingleModule.get('cnnFC')):
         cnnName = 'cnnFC'
-        kernelSizeR = int(prevLayerOut[0].get_shape()[1])
-        kernelSizeC = int(prevLayerOut[0].get_shape()[2])
+        kernelSizeR = int(prevLayerOut.get_shape()[1])
+        kernelSizeC = int(prevLayerOut.get_shape()[2])
         padding = 'VALID'
     if (fireDimsSingleModule.get('cnn1x1')):
         cnnName = 'cnn1x1'
@@ -352,22 +355,28 @@ def conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParalModules,
         cnnName = 'cnn7x7'
         kernelSizeR = 7
         kernelSizeC = 7
+    if (fireDimsSingleModule.get('cnn11x5')):
+        cnnName = 'cnn11x5'
+        kernelSizeR = 11
+        kernelSizeC = 5
+    if (fireDimsSingleModule.get('cnn3x5')):
+        cnnName = 'cnn3x5'
+        kernelSizeR = 3
+        kernelSizeC = 5
+    if (fireDimsSingleModule.get('cnn1x3')):
+        cnnName = 'cnn1x3'
+        kernelSizeR = 1
+        kernelSizeC = 3
+    if (fireDimsSingleModule.get('cnn3x1')):
+        cnnName = 'cnn3x1'
+        kernelSizeR = 3
+        kernelSizeC = 1
 
-    print(name, cnnName, prevLayerDim, numParalModules, prevLayerIndivDims, fireDimsSingleModule, prevLayerOut[0].get_shape())
+    print('----', name, cnnName, prevLayerDim, kernelSizeR, kernelSizeC, fireDimsSingleModule[cnnName], prevLayerOut[0].get_shape())
 
     with tf.variable_scope(name):
         with tf.variable_scope(cnnName) as scope:
             layerName = scope.name.replace("/", "_")
-            #kernel = _variable_with_weight_decay('weights',
-            #                                     shape=[kernelSize, kernelSize, prevLayerIndivDims, fireDimsSingleModule['cnn3x3']],
-            #                                     initializer=existingParams[layerName]['weights'] if (existingParams is not None and
-            #                                                                                         layerName in existingParams) else
-            #                                                    (tf.contrib.layers.xavier_initializer_conv2d() if kwargs.get('phase')=='train' else
-            #                                                     tf.constant_initializer(0.0, dtype=dtype)),
-            #                                     dtype=dtype,
-            # wd=wd,
-            #                                     trainable=kwargs.get('tuneExistingWeights') if (existingParams is not None and 
-            #                                                                               layerName in existingParams) else True)
             stddev = np.sqrt(2/np.prod(prevLayerOut[0].get_shape().as_list()[1:]))
             kernel = _variable_with_weight_decay('weights',
                                                  shape=[kernelSizeR, kernelSizeC, prevLayerIndivDims, fireDimsSingleModule[cnnName]],
@@ -390,14 +399,17 @@ def conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParalModules,
                                          dtype=dtype)
 
             for prl in range(numParalModules):
-                conv = tf.nn.conv2d(prevLayerOut[prl], kernel, [1, 1, 1, 1], padding=padding)
+                conv = tf.nn.conv2d(prevLayerOut[prl], kernel, strides=stride, padding=padding)
 
                 if kwargs.get('weightNorm'):
                     # calc weight norm
-                    conv = batch_norm('weight_norm', conv, dtype)
+                    conv = batch_norm(name+'_'+cnnName+'_weightNorm', conv, dtype)
 
-                bias = tf.nn.bias_add(conv, biases)
+                conv = tf.nn.bias_add(conv, biases)
                 convReluPrl = tf.nn.relu(conv, name=scope.name)
+                if kwargs.get('batchNorm'):
+                    convReluPrl = batch_norm(name+'_'+cnnName+'_batchNorm', convReluPrl, dtype, kwargs.get('phase'))
+
                 # Concatinate results along last dimension to get one output tensor
                 if prl is 0:
                     convRelu = convReluPrl
@@ -418,7 +430,14 @@ def conv_fire_parallel_inception_module(name, prevLayerOut, prevLayerDim, numPar
         fireDimsSingleModule:     number of output dimensions for each parallel module
     """
     if (fireDimsSingleModule.get('cnnFC')):
-        fireOut_cnnFC, prevExpandDim_cnnFC = conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParalModules, {'cnnFC': fireDimsSingleModule.get('cnnFC')}, wd, **kwargs)
+        fireOut, prevExpandDim = conv_fire_parallel_module(name+'_inc_1x1_0', prevLayerOut, prevLayerDim, {'cnn1x1': prevLayerDim}, wd, stride=[1,1,1,1], **kwargs)
+        fireOut, prevExpandDim = conv_fire_parallel_module(name+'_inc_3x3_1', fireOut, prevExpandDim, {'cnn3x3': prevExpandDim}, wd, stride=[1,2,2,1], padding = 'VALID', **kwargs)
+        fireOut, prevExpandDim = conv_fire_parallel_module(name+'_inc_3x3_2', fireOut, prevExpandDim, {'cnn3x3': prevExpandDim}, wd, stride=[1,2,2,1], padding = 'VALID', **kwargs)
+        fireOut, prevExpandDim = conv_fire_parallel_module(name+'_inc_1x3_3', fireOut, prevExpandDim, {'cnn1x3': prevExpandDim}, wd, stride=[1,1,2,1], **kwargs)
+        fireOut, prevExpandDim = conv_fire_parallel_module(name+'_inc_3x1_4', fireOut, prevExpandDim, {'cnn3x1': prevExpandDim}, wd, stride=[1,2,1,1], **kwargs)
+        fireOut, prevExpandDim = conv_fire_parallel_module(name+'_inc_1x3_5', fireOut, prevExpandDim, {'cnn1x3': prevExpandDim}, wd, stride=[1,1,2,1], **kwargs)
+        fireOut, prevExpandDim = conv_fire_parallel_module(name+'_inc_3x1_6', fireOut, prevExpandDim, {'cnn3x1': fireDimsSingleModule.get('cnnFC')}, wd, stride=[1,2,1,1], **kwargs)
+
     if (fireDimsSingleModule.get('cnn1x1')):
         fireOut_1x1, prevExpandDim_1x1 = conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParalModules, {'cnn1x1': fireDimsSingleModule.get('cnn1x1')}, wd, **kwargs)
     if (fireDimsSingleModule.get('cnn3x3')):
@@ -427,33 +446,38 @@ def conv_fire_parallel_inception_module(name, prevLayerOut, prevLayerDim, numPar
         fireOut_5x5, prevExpandDim_5x5 = conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParalModules, {'cnn5x5': fireDimsSingleModule.get('cnn5x5')}, wd, **kwargs)
     if (fireDimsSingleModule.get('cnn7x7')):
         fireOut_7x7, prevExpandDim_7x7 = conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParalModules, {'cnn7x7': fireDimsSingleModule.get('cnn7x7')}, wd, **kwargs)
-    #### 3
+    
+
     if (fireDimsSingleModule.get('cnn1x1')) and (fireDimsSingleModule.get('cnn3x3')) and (fireDimsSingleModule.get('cnn5x5')):
         fireOut = tf.concat([fireOut_1x1, fireOut_3x3, fireOut_5x5], axis=3)
         prevExpandDim = (prevExpandDim_1x1+prevExpandDim_3x3+prevExpandDim_5x5)
     if (fireDimsSingleModule.get('cnn3x3')) and (fireDimsSingleModule.get('cnn5x5')) and (fireDimsSingleModule.get('cnn7x7')):
         fireOut = tf.concat([fireOut_3x3, fireOut_5x5, fireOut_7x7], axis=3)
         prevExpandDim = (prevExpandDim_3x3+prevExpandDim_5x5+prevExpandDim_7x7)
-    #### 2
     if (fireDimsSingleModule.get('cnn1x1')) and (fireDimsSingleModule.get('cnn3x3')):
         fireOut = tf.concat([fireOut_1x1, fireOut_3x3], axis=3)
         prevExpandDim = (prevExpandDim_1x1+prevExpandDim_3x3)
-    #### 1
-    if (fireDimsSingleModule.get('cnn1x1')):
+    if (fireDimsSingleModule.get('cnn1x1')) and (fireDimsSingleModule.get('cnn5x5')):
+        fireOut = tf.concat([fireOut_1x1, fireOut_5x5], axis=3)
+        prevExpandDim = (prevExpandDim_1x1+prevExpandDim_5x5)
+    if (fireDimsSingleModule.get('cnn3x3')) and (fireDimsSingleModule.get('cnn5x5')):
+        fireOut = tf.concat([fireOut_3x3, fireOut_5x5], axis=3)
+        prevExpandDim = (prevExpandDim_3x3+prevExpandDim_5x5)
+    elif fireDimsSingleModule.get('cnn1x1'):
         fireOut = fireOut_1x1
         prevExpandDim = prevExpandDim_1x1
-    if (fireDimsSingleModule.get('cnn3x3')):
+    elif fireDimsSingleModule.get('cnn3x3'):
         fireOut = fireOut_3x3
         prevExpandDim = prevExpandDim_3x3
-    if (fireDimsSingleModule.get('cnn5x5')):
+    elif fireDimsSingleModule.get('cnn5x5'):
         fireOut = fireOut_5x5
         prevExpandDim = prevExpandDim_5x5
-    if (fireDimsSingleModule.get('cnnFC')):
-        fireOut = fireOut_cnnFC
-        prevExpandDim = prevExpandDim_cnnFC
-
+    
     return fireOut, prevExpandDim
 
+
+    
+    
 def conv_fire_residual_module(name, prevLayerOut, prevLayerDim, historicLayerOut, historicLayerDim, fireDims, wd=None, **kwargs):
     USE_FP_16 = kwargs.get('usefp16')
     dtype = tf.float16 if USE_FP_16 else tf.float32
@@ -521,13 +545,12 @@ def conv_fire_residual_module(name, prevLayerOut, prevLayerDim, historicLayerOut
 
         return convRelu, fireDims[cnnName]
 
-def conv_fire_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwargs):
+def conv_fire_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, stride=[1, 1, 1, 1], padding='SAME', **kwargs):
     USE_FP_16 = kwargs.get('usefp16')
     dtype = tf.float16 if USE_FP_16 else tf.float32
     
     existingParams = kwargs.get('existingParams')
     
-    padding = 'SAME'
     if (fireDims.get('cnnFC')):
         cnnName = 'cnnFC'
         kernelSizeR = int(prevLayerOut.get_shape()[1])
@@ -549,14 +572,30 @@ def conv_fire_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwar
         cnnName = 'cnn7x7'
         kernelSizeR = 7
         kernelSizeC = 7
+    if (fireDims.get('cnn11x5')):
+        cnnName = 'cnn11x5'
+        kernelSizeR = 11
+        kernelSizeC = 5
+    if (fireDims.get('cnn3x5')):
+        cnnName = 'cnn3x5'
+        kernelSizeR = 3
+        kernelSizeC = 5
+    if (fireDims.get('cnn1x3')):
+        cnnName = 'cnn1x3'
+        kernelSizeR = 1
+        kernelSizeC = 3
+    if (fireDims.get('cnn3x1')):
+        cnnName = 'cnn3x1'
+        kernelSizeR = 3
+        kernelSizeC = 1
 
-    print(name, cnnName, prevLayerDim, numParalModules, prevLayerIndivDims, fireDimsSingleModule, prevLayerOut[0].get_shape())
+    print('----', name, cnnName, prevLayerDim, kernelSizeR, kernelSizeC, fireDims[cnnName], prevLayerOut.get_shape())
 
     with tf.variable_scope(name):
         with tf.variable_scope(cnnName) as scope:
             layerName = scope.name.replace("/", "_")
             #kernel = _variable_with_weight_decay('weights',
-            #                                     shape=[kernelSize, kernelSize, prevLayerDim, fireDims['cnn3x3']],
+            #                                     shape=[kernelSizeR, kernelSizeR, prevLayerDim, fireDims['cnn3x3']],
             #                                     initializer=existingParams[layerName]['weights'] if (existingParams is not None and
             #                                                                                         layerName in existingParams) else
             #                                                    (tf.contrib.layers.xavier_initializer_conv2d() if kwargs.get('phase')=='train' else
@@ -576,49 +615,72 @@ def conv_fire_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwar
                                                  wd=wd,
                                                  trainable=kwargs.get('tuneExistingWeights') if (existingParams is not None and 
                                                                                            layerName in existingParams) else True)
-            conv = tf.nn.conv2d(prevLayerOut, kernel, [1, 1, 1, 1], padding=padding)
+            conv = tf.nn.conv2d(prevLayerOut, kernel, stride, padding=padding)
 
             if kwargs.get('weightNorm'):
                 # calc weight norm
-                conv = batch_norm('weight_norm', conv, dtype)
+                conv = batch_norm('weight_norm', conv, dtype, kwargs.get('phase'))
 
-            if existingParams is not None and layerName in existingParams:
-                biases = tf.get_variable('biases',
-                                         initializer=existingParams[layerName]['biases'], dtype=dtype)
-            else:
-                biases = tf.get_variable('biases', [fireDims[cnnName]],
-                                         initializer=tf.constant_initializer(0.0),
-                                         dtype=dtype)
+            with tf.variable_scope('biases', reuse=tf.AUTO_REUSE):
+                if existingParams is not None and layerName in existingParams:
+                    biases = tf.get_variable('biases',
+                                             initializer=existingParams[layerName]['biases'], dtype=dtype)
+                else:
+                    biases = tf.get_variable('biases', [fireDims[cnnName]],
+                                             initializer=tf.constant_initializer(0.0),
+                                             dtype=dtype)
 
             conv = tf.nn.bias_add(conv, biases)
             convRelu = tf.nn.relu(conv, name=scope.name)
-            #_activation_summary(convRelu)
+            _activation_summary(convRelu)
+
+            if kwargs.get('batchNorm'):
+                convRelu = batch_norm('batchnorm', convRelu, dtype, kwargs.get('phase'))
 
         return convRelu, fireDims[cnnName]
         
 
 def conv_fire_inception_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwargs):
     if (fireDims.get('cnnFC')):
-        fireOut_cnnFC, prevExpandDim_cnnFC = conv_fire_module(name, prevLayerOut, prevLayerDim, {'cnnFC': fireDims.get('cnnFC')}, wd, **kwargs)
+        fireOut, prevExpandDim = conv_fire_module(name+'_inc_1x1_0', prevLayerOut, prevLayerDim, {'cnn1x1': prevLayerDim}, wd, stride=[1,1,1,1], **kwargs)
+        fireOut, prevExpandDim = conv_fire_module(name+'_inc_3x3_1', fireOut, prevExpandDim, {'cnn3x3': prevExpandDim}, wd, stride=[1,2,2,1], padding = 'VALID', **kwargs)
+        fireOut, prevExpandDim = conv_fire_module(name+'_inc_3x3_2', fireOut, prevExpandDim, {'cnn3x3': prevExpandDim}, wd, stride=[1,2,2,1], padding = 'VALID', **kwargs)
+        fireOut, prevExpandDim = conv_fire_module(name+'_inc_1x3_3', fireOut, prevExpandDim, {'cnn1x3': prevExpandDim}, wd, stride=[1,1,2,1], **kwargs)
+        fireOut, prevExpandDim = conv_fire_module(name+'_inc_3x1_4', fireOut, prevExpandDim, {'cnn3x1': prevExpandDim}, wd, stride=[1,2,1,1], **kwargs)
+        fireOut, prevExpandDim = conv_fire_module(name+'_inc_1x3_5', fireOut, prevExpandDim, {'cnn1x3': prevExpandDim}, wd, stride=[1,1,2,1], **kwargs)
+        fireOut, prevExpandDim = conv_fire_module(name+'_inc_3x1_6', fireOut, prevExpandDim, {'cnn3x1': fireDims.get('cnnFC')}, wd, stride=[1,2,1,1], **kwargs)
+
     if (fireDims.get('cnn1x1')):
         fireOut_1x1, prevExpandDim_1x1 = conv_fire_module(name, prevLayerOut, prevLayerDim, {'cnn1x1': fireDims.get('cnn1x1')}, wd, **kwargs)
     if (fireDims.get('cnn3x3')):
         fireOut_3x3, prevExpandDim_3x3 = conv_fire_module(name, prevLayerOut, prevLayerDim, {'cnn3x3': fireDims.get('cnn3x3')}, wd, **kwargs)
     if (fireDims.get('cnn5x5')):
         fireOut_5x5, prevExpandDim_5x5 = conv_fire_module(name, prevLayerOut, prevLayerDim, {'cnn5x5': fireDims.get('cnn5x5')}, wd, **kwargs)
-    if (fireDims.get('cnn7x7')):
-        fireOut_7x7, prevExpandDim_7x7 = conv_fire_module(name, prevLayerOut, prevLayerDim, {'cnn7x7': fireDims.get('cnn7x7')}, wd, **kwargs)
+    #if (fireDims.get('cnn7x7')):
+    #    fireOut_1x1, prevExpandDim_1x1 = conv_fire_module(name, prevLayerOut, prevLayerDim, {'cnn7x7': fireDims.get('cnn7x7')}, wd, **kwargs)
     
-    if (fireDims.get('cnnFC')):
-        fireOut = fireOut_cnnFC
-        prevExpandDim = prevExpandDim_cnnFC
-    if (fireDims.get('cnn1x1')) and (fireDims.get('cnn3x3')) and (fireDims.get('cnn5x5')):
+    if (fireDims.get('cnn1x1') and fireDims.get('cnn3x3') and fireDims.get('cnn5x5')):
         fireOut = tf.concat([fireOut_1x1, fireOut_3x3, fireOut_5x5], axis=3)
-        prevExpandDim = (prevExpandDim_1x1+prevExpandDim_3x3+prevExpandDim_5x5)
-    elif (fireDims.get('cnn3x3')) and (fireDims.get('cnn5x5')) and (fireDims.get('cnn7x7')):
-        fireOut = tf.concat([fireOut_3x3, fireOut_5x5, fireOut_7x7], axis=3)
-        prevExpandDim = (prevExpandDim_3x3+prevExpandDim_5x5+prevExpandDim_7x7)
-
+        prevExpandDim = prevExpandDim_1x1+prevExpandDim_3x3+prevExpandDim_5x5
+    elif (fireDims.get('cnn3x3') and fireDims.get('cnn5x5')):
+        fireOut = tf.concat([fireOut_3x3, fireOut_5x5], axis=3)
+        prevExpandDim = prevExpandDim_3x3+prevExpandDim_5x5
+    elif (fireDims.get('cnn1x1') and fireDims.get('cnn3x3')):
+        fireOut = tf.concat([fireOut_1x1, fireOut_3x3], axis=3)
+        prevExpandDim = prevExpandDim_1x1+prevExpandDim_3x3
+    elif (fireDims.get('cnn1x1') and fireDims.get('cnn5x5')):
+        fireOut = tf.concat([fireOut_1x1, fireOut_5x5], axis=3)
+        prevExpandDim = prevExpandDim_1x1+prevExpandDim_5x5
+    elif fireDims.get('cnn1x1'):
+        fireOut = fireOut_1x1
+        prevExpandDim = prevExpandDim_1x1
+    elif fireDims.get('cnn3x3'):
+        fireOut = fireOut_3x3
+        prevExpandDim = prevExpandDim_3x3
+    elif fireDims.get('cnn5x5'):
+        fireOut = fireOut_5x5
+        prevExpandDim = prevExpandDim_5x5
+    
     return fireOut, prevExpandDim
 
 def fc_fire_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwargs):
@@ -656,31 +718,6 @@ def fc_fire_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwargs
         
         return fcRelu, fireDims['fc']
 
-def conv_fire_LSTM_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwargs):
-    USE_FP_16 = kwargs.get('usefp16')
-    dtype = tf.float16 if USE_FP_16 else tf.float32
-    existingParams = kwargs.get('existingParams')
-
-    print(name, prevLayerDim, fireDims)
-
-    print('convlstm input', prevLayerOut.get_shape())
-    with tf.variable_scope(name):
-        with tf.variable_scope('convlstm') as scope:
-            #defining the network withd 'fireDims' hidden states
-            convlstmLayer = tf.contrib.rnn.ConvLSTMCell(conv_ndims=3, 
-                                                        input_shape=[int(prevLayerOut.get_shape()[1]),   #time 
-                                                                     int(prevLayerOut.get_shape()[2]),   #x
-                                                                     int(prevLayerOut.get_shape()[3]),   #y
-                                                                     int(prevLayerOut.get_shape()[4])],  #dims
-                                                        output_channels=fireDims['convlstm'], 
-                                                        kernel_shape=3)
-            # 'outputs' is a tensor of shape [batchSize, numTimes, fireDims]
-            # 'state' is a tensor of shape [batchSize, fireDims] !might be used to initiate the next lstm layer state! 
-            outputs, state = tf.nn.dynamic_rnn(convlstmLayer, prevLayerOut, time_major=False, dtype="float32")
-        # from 'outputs' return the last output of unrolled lstm -> [batchSize, fireDims]
-        print('convlstm out', convlstmLayer.get_shape())
-        return outputs[:,-1,:], fireDims['convlstm']
-
 def fc_fire_LSTM_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwargs):
     USE_FP_16 = kwargs.get('usefp16')
     dtype = tf.float16 if USE_FP_16 else tf.float32
@@ -696,30 +733,7 @@ def fc_fire_LSTM_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **k
             # 'state' is a tensor of shape [batchSize, fireDims] !might be used to initiate the next lstm layer state! 
             outputs, state = tf.nn.dynamic_rnn(lstmLayer, prevLayerOut, time_major=False, dtype="float32")
         # from 'outputs' return the last output of unrolled lstm -> [batchSize, fireDims]
-        # this is a batch major output (time_major=False)
         return outputs[:,-1,:], fireDims['fclstm']
-        # this is a time major output (time_major=True)
-        #return outputs[-1,:,:], fireDims['fclstm']
-
-def fc_fire_GRU_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwargs):
-    USE_FP_16 = kwargs.get('usefp16')
-    dtype = tf.float16 if USE_FP_16 else tf.float32
-    existingParams = kwargs.get('existingParams')
-
-    print(name, prevLayerDim, fireDims)
-
-    with tf.variable_scope(name):
-        with tf.variable_scope('fcgru') as scope:
-            #defining the network withd 'fireDims' hidden states
-            lstmLayer = tf.contrib.rnn.GRUCell(fireDims['fcgru'])
-            # 'outputs' is a tensor of shape [batchSize, numTimes, fireDims]
-            # 'state' is a tensor of shape [batchSize, fireDims] !might be used to initiate the next gru layer state! 
-            outputs, state = tf.nn.dynamic_rnn(lstmLayer, prevLayerOut, time_major=False, dtype="float32")
-        # from 'outputs' return the last output of unrolled gru -> [batchSize, fireDims]
-        # this is a batch major output (time_major=False)
-        return outputs[:,-1,:], fireDims['fcgru']
-        # this is a time major output (time_major=True)
-        #return outputs[-1,:,:], fireDims['fclstm']
 
 def fc_regression_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **kwargs):
     USE_FP_16 = kwargs.get('usefp16')

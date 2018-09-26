@@ -378,7 +378,7 @@ def parse_example_proto_ntuple_color(exampleSerialized, **kwargs):
     imagesColor = _decode_byte_image(features['imagesColor'],
                                 kwargs.get('imageColorRows'),
                                 kwargs.get('imageColorCols'),
-                                kwargs.get('imageColorChannels'))
+                                kwargs.get('imageColorChannels')*numTuples)
     pcl = _get_pcl_ntuple(features['pcl'], kwargs.get('pclRows'), kwargs.get('pclCols'), numTuples)
     target = _get_target_ntuple(features['target'], kwargs.get('logicalOutputSize'), numTuples-1)
     # PCLs will hold padded [0, 0, 0, 0] points at the end that will be ignored during usage

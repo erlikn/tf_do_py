@@ -199,6 +199,8 @@ def _params_transformation_loss_nTuple_last(targetP, targetT, nTuple, activeBatc
     return _transformation_loss_nTuple_last(tMatP, tMatT, nTuple, activeBatchSize)
 
 
+def _focal_loss(targetP, targetT, gamma=0.4):
+    return focal_loss.focal_loss(targetP, targetT, gamma=gamma)
 
 def loss(pred, tval, **kwargs):
     """
@@ -217,3 +219,5 @@ def loss(pred, tval, **kwargs):
         return _weighted_params_L2_loss_nTuple(pred, tval, kwargs.get('numTuple'), kwargs.get('activeBatchSize'))
     if lossFunction == '_params_transformation_loss_nTuple_last':
         return _params_transformation_loss_nTuple_last(pred, tval, 1, kwargs.get('activeBatchSize'))
+    if lossFunction == 'focal_loss':
+        return _focal_loss(pred, tval)

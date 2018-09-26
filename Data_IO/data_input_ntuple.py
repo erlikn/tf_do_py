@@ -190,11 +190,10 @@ def fetch_inputs(numPreprocessThreads=None, numReaders=1, **kwargs):
         batchImages = tf.cast(batchImages, tf.float32)
         # Display the training images in the visualizer.
         numTuple = kwargs.get('numTuple')
-
-        images = tf.split(batchImages, numTuple, axis=3)
         
         for i in range(numTuple):
-            tf.summary.image('images_'+str(i)+'_', images[i])
+            #tf.summary.image('images_'+str(i)+'_', tf.split(batchImages, numTuple, axis=3)[i])
+            tf.summary.image('images_'+str(i)+'_', batchImages)
         
         return batchImages, batchPcl, batchTarget, batchTFrecFileIDs
 
