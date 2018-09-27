@@ -112,7 +112,7 @@ def _variable_with_weight_decay(name, shape, initializer, dtype, wd, trainable=T
 
 def batch_norm(name, tensorConv, dtype, phase):
     if phase == 'train':
-        print(name)
+        #print(name)
         with tf.variable_scope(name):
             # Calc batch mean for parallel module
             #batchMean, batchVar = tf.nn.moments(tensorConv, axes=[0]) # moments along x,y
@@ -391,7 +391,7 @@ def conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParalModules,
             
             if existingParams is not None and layerName in existingParams:
                 biases = tf.get_variable('biases',
-                                         initializer=existingParams[layerName]['biases'], 
+                                         initializer=existingParams[layerName]['biases'],
                                          dtype=dtype)
             else:
                 biases = tf.get_variable('biases', [fireDimsSingleModule[cnnName]],
@@ -403,12 +403,12 @@ def conv_fire_parallel_module(name, prevLayerOut, prevLayerDim, numParalModules,
 
                 if kwargs.get('weightNorm'):
                     # calc weight norm
-                    conv = batch_norm(name+'_'+cnnName+'_weightNorm', conv, dtype)
+                    conv = batch_norm(name+'_'+cnnName+'_weightNorm_'+str(prl), conv, dtype)
 
                 conv = tf.nn.bias_add(conv, biases)
                 convReluPrl = tf.nn.relu(conv, name=scope.name)
                 if kwargs.get('batchNorm'):
-                    convReluPrl = batch_norm(name+'_'+cnnName+'_batchNorm', convReluPrl, dtype, kwargs.get('phase'))
+                    convReluPrl = batch_norm(name+'_'+cnnName+'_batchNorm_'+str(prl), convReluPrl, dtype, kwargs.get('phase'))
 
                 # Concatinate results along last dimension to get one output tensor
                 if prl is 0:
@@ -728,7 +728,7 @@ def fc_fire_LSTM_module(name, prevLayerOut, prevLayerDim, fireDims, wd=None, **k
     with tf.variable_scope(name):
         with tf.variable_scope('fclstm') as scope:
             #defining the network withd 'fireDims' hidden states
-            lstmLayer = tf.contrib.rnn.BasicLSTMCell(fireDims['fclstm'], forget_bias=1)
+            lstmLayer = tf.contrib.rnn.LSTMCell(fireDims['fclstm'], forget_bias=1)
             # 'outputs' is a tensor of shape [batchSize, numTimes, fireDims]
             # 'state' is a tensor of shape [batchSize, fireDims] !might be used to initiate the next lstm layer state! 
             outputs, state = tf.nn.dynamic_rnn(lstmLayer, prevLayerOut, time_major=False, dtype="float32")
@@ -800,19 +800,18 @@ def train(loss, globalStep, **kwargs):
     #train_op = opt.apply_gradients(gradsNvars, global_step=globalStep)
     opApplyGradients = optim.apply_gradients(zip(grads, tvars), global_step=globalStep)
 
-        
     # Add histograms for trainable variables.
-    for var in tf.trainable_variables():    
-        tf.summary.histogram(var.op.name, var)
+    #for var in tf.trainable_variables():    
+    #    tf.summary.histogram(var.op.name, var)
     
     # Add histograms for gradients.
-    for grad, var in zip(grads, tvars):
-        if grad is not None:
-            tf.summary.histogram(var.op.name + '/gradients', grad)
+    #for grad, var in zip(grads, tvars):
+    #    if grad is not None:
+    #        tf.summary.histogram(var.op.name + '/gradients', grad)
     
     with tf.control_dependencies([opApplyGradients]):
         opTrain = tf.no_op(name='train')
-    return opTrain
+        return opTrain
 
 def test(loss, globalStep, **kwargs):
     # Generate moving averages of all losses and associated summaries.
@@ -820,5 +819,4 @@ def test(loss, globalStep, **kwargs):
     
     with tf.control_dependencies([]):
         opTest = tf.no_op(name='test')
-
-    return opTest
+        return opTest

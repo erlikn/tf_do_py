@@ -136,7 +136,7 @@ def inference(images, **kwargs): #batchSize=None, phase='train', outLayer=[13,13
     prevExpandDim = int(fireOut.get_shape()[2])
     ############# FC1-LSTM layer with 1024 hidden celss
     fireOut, prevExpandDim = model_base.fc_fire_LSTM_module('fclstm1', fireOut, prevExpandDim,
-                                                       {'fclstm': modelShape[9]},
+                                                       {'fclstm': modelShape[10]},
                                                        wd, **kwargs)
     # fireOut is a 
     # calc batch norm FC1
